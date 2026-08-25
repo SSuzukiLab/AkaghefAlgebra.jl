@@ -1,3 +1,6 @@
 Manifest.toml
 coverage/
 .DS_Store
+__pycache__/
+*.pyc
+/tools/sage/artifacts/verify_groups_run.log

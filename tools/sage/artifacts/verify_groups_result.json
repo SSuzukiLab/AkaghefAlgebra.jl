@@ -1,0 +1,36 @@
+{
+  "base_url": "http://127.0.0.1:8766",
+  "cases": {
+    "AlternatingGroup(5)": {
+      "ok": true,
+      "order": 60
+    },
+    "C5": {
+      "generator_order": 5,
+      "ok": true,
+      "order": 5
+    },
+    "DihedralGroup(4)": {
+      "is_abelian": false,
+      "ok": true,
+      "order": 8
+    },
+    "SymmetricGroup(4)": {
+      "is_abelian": false,
+      "ok": true,
+      "order": 24,
+      "product_(1,2)*(2,3)": "(1,3,2)",
+      "product_order": 3
+    },
+    "libgap.SymmetricGroup(4).Size": {
+      "ok": true,
+      "order": 24
+    },
+    "oneshot_S3": {
+      "ok": true,
+      "order": 6
+    }
+  },
+  "sage_version": "10.7",
+  "transport": "wsl_file"
+}

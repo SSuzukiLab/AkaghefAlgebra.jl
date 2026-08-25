@@ -1,0 +1,13 @@
+name = "SageBridge"
+uuid = "c0a0b0e1-4f2a-4c3d-9e8f-1a2b3c4d5e6f"
+version = "0.1.0"
+authors = ["akaghef"]
+
+[deps]
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+
+[compat]
+HTTP = "1"
+JSON = "0.21, 1"
+julia = "1.10"
