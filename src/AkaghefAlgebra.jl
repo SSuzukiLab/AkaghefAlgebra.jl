@@ -56,6 +56,17 @@ using .HeisenbergDoubleMod: HeisenbergDouble, hd_mul,
                             verify_HD_associativity, hd_pairing_nondeg, hd_unit_ok
 export HeisenbergDouble, hd_mul, verify_HD_associativity, hd_pairing_nondeg, hd_unit_ok
 
+# R-convention O_q(SL2) dual PBW basis verification helpers.
+include("Hopf/QSL2Dual.jl")
+using .QSL2DualMod: qsl2_qnum, qsl2_qfactorial,
+                     qsl2_root_pairing_iterative, qsl2_root_dual_coefficient,
+                     qsl2_dual_pairing,
+                     qsl2_old_formula_leaks, qsl2_corrected_generator_pairings
+export qsl2_qnum, qsl2_qfactorial,
+       qsl2_root_pairing_iterative, qsl2_root_dual_coefficient,
+       qsl2_dual_pairing,
+       qsl2_old_formula_leaks, qsl2_corrected_generator_pairings
+
 # TODO: 以下は後続 Phase D wave で追加
 # include("Sparse/SparseEx.jl")
 # include("Vector/VectAlg.jl")

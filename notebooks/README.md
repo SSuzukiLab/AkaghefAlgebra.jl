@@ -19,6 +19,13 @@ VSCode Julia 拡張の `##` cell ナビゲーションで 1 セルずつ回せ�
 | 4 | [04_dual_and_hd.jl](04_dual_and_hd.jl) | 40 分 | dualHopf と Heisenberg double の積・単位元 |
 | 5 | [05_exercises.jl](05_exercises.jl) | 随時 | 手を動かす演習（解答は下にまとめ） |
 
+## Executable QMD experiments
+
+| ファイル | 内容 |
+|---|---|
+| [sl2_dualbasis.qmd](sl2_dualbasis.qmd) | 全体 $O(SL_2)$ の dual basis を古典 $q=1$ で一般式（degree 6 まで展開検証）として扱う |
+| [qsl2_dualbasis.qmd](qsl2_dualbasis.qmd) | R派 $O_q(SL_2)$ dual PBW basis の主定理・証明・q差分検証・導出履歴 |
+
 各ノートの先頭に「このノートで分かること」「前提」「つまずきポイント」を書いている。
 
 ## セルの回し方（VSCode Julia 拡張）

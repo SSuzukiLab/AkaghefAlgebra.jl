@@ -1,0 +1,1307 @@
+---
+title: 'The R-convention dual PBW basis of O_q(SL_2)'
+author: 'Akaghef'
+date: '2026-08-26'
+engine: julia
+format:
+  html:
+    self-contained: true
+execute:
+  daemon: false
+---
+
+# 結論
+
+$q=e^\hbar$ とし、R派の余積と量子行列式
+
+$$
+\Delta_R(E)=1\otimes E+E\otimes K,
+\qquad
+\Delta_R(F)=F\otimes1+K^{-1}\otimes F,
+\qquad
+ad-q^{-1}bc=1
+$$
+
+を固定する。$d$ を可逆化し、
+
+$$
+x=bd^{-1},\qquad y=cd,\qquad z=-\log d
+$$
+
+と置く。このとき、PBW順序 $E^iF^jH^k$ に対する dual basis は
+
+$$
+\boxed{
+\bigl(E^iF^jH^k\bigr)_{q,R}^\vee
+=
+\frac{q^{2ij-\binom{i+1}{2}-\binom{j}{2}}}
+{[i]_q!\,[j]_q!\,k!}
+(bd^{-1})^i(cd)^j(-\log d-i\hbar)^k.
+}
+$$
+
+特に
+
+$$
+E_{q,R}^\vee=q^{-1}bd^{-1},\qquad
+F_{q,R}^\vee=cd,\qquad
+H_{q,R}^\vee=-\log d.
+$$
+
+また、$\eta=bc$ と書けば、ordered normal form で
+
+$$
+\boxed{
+-\log d
+=\log a+
+\sum_{n\ge1}(-1)^n\frac{\hbar}{\sinh(n\hbar)}\eta^n.
+}
+$$
+
+以下では、最初にこの主張を純粋に代数的に証明し、その後に
+q-difference 計算と低次数の独立検証を与える。
+
+# 1. 定義と流儀
+
+この QMD の coproduct label は **R派（K-right）** と固定する。すなわち
+
+$$
+\Delta_R(E)=1\otimes E+E\otimes K,
+\qquad
+\Delta_R(F)=F\otimes1+K^{-1}\otimes F.
+$$
+
+対して、既存 MATLAB `Examples/StrAlgebra/StrUqsl2.m` は
+**L派（K-left）**：
+
+$$
+\Delta_L(E)=E\otimes1+K\otimes E,
+\qquad
+\Delta_L(F)=F\otimes K^{-1}+1\otimes F.
+$$
+
+R派とL派の結果は、明示的な変換なしに同一視しない。
+
+## 1.1. 非可換座標環 $O_q(SL_2)$
+
+The q-difference experiment below acts on a commutative polynomial realization,
+but the intended noncommutative coordinate algebra must be recorded separately.
+With the quantum determinant convention used here,
+
+$$
+\det_q X=ad-q^{-1}bc,
+$$
+
+the corresponding FRT relations are
+
+$$
+\begin{aligned}
+ab&=q^{-1}ba, & ac&=q^{-1}ca,\\
+bd&=q^{-1}db, & cd&=q^{-1}dc,\\
+bc&=cb, & ad-da&=(q^{-1}-q)bc.
+\end{aligned}
+$$
+
+The quantum determinant relation is
+
+$$
+ad-q^{-1}bc=1,
+$$
+
+and, using the commutator relation, equivalently
+
+$$
+da-qbc=1.
+$$
+
+Thus the target algebra is
+
+$$
+O_q(SL_2)=
+\frac{K\langle a,b,c,d\rangle}
+{\bigl(ab-q^{-1}ba,\ ac-q^{-1}ca,\ bd-q^{-1}db,\ cd-q^{-1}dc,
+bc-cb,\ ad-da-(q^{-1}-q)bc,\ ad-q^{-1}bc-1\bigr)}.
+$$
+
+The frequently used opposite FRT convention is obtained by replacing
+$q\leftrightarrow q^{-1}$; it has $ad-qbc=1$.  It must not be silently
+identified with the present R-labelled convention.
+
+The current executable cells verify preservation of the polynomial
+$ad-q^{-1}bc$ by the q-difference operators.  They do **not** yet implement the
+noncommutative products above.  Promoting the step-up pairing to genuine
+$O_q(SL_2)$ requires adding these relations, fixing the PBW ordering, and
+specifying the star/PBW identification between the commutative realization and
+the noncommutative coordinate algebra.
+
+## 1.2. q-number、PBW basis、pairing
+
+対称 q-number と q-factorial を
+
+$$
+[n]_q=\frac{q^n-q^{-n}}{q-q^{-1}},
+\qquad
+[n]_q!=\prod_{r=1}^n[r]_q
+$$
+
+で定める。量子包絡代数側では
+
+$$
+KE=q^2EK,
+\qquad
+KF=q^{-2}FK
+$$
+
+とし、PBW 順序を $E^iF^jH^k$ に固定する。座標環との pairing は基本表現
+$\pi(K)=\operatorname{diag}(q,q^{-1})$ の行列係数
+
+$$
+\langle t_{rs},u\rangle=\pi(u)_{rs}
+$$
+
+から Hopf pairing として延長する。
+
+# 2. 数学的証明
+
+## 2.1. 非可換対数 $H_q^\vee=-\log d$
+
+We first prove the Cartan-coordinate identity
+
+$$
+H_q^\vee=-\log d.
+$$
+
+This logarithm is well-defined in the $(d-1)$-adic completion as the single
+noncommutative series
+
+$$
+-\log d=\sum_{n\ge1}\frac{(1-d)^n}{n}.
+$$
+
+The difficulty is not defining this series, but rewriting it in the local
+coordinates $(a,b,c)$.  The q-determinant gives
+
+$$
+d=a^{-1}(1+q^{-1}bc)=(1+qbc)a^{-1}.
+$$
+
+Since
+
+$$
+a(bc)=q^{-2}(bc)a,
+$$
+
+the factors $a^{-1}$ and $1+q^{-1}bc$ do not commute.  Therefore the classical
+identity
+
+$$
+-\log d=\log a-\log(1+bc)
+$$
+
+cannot be imported directly.  Any proof must use a BCH/q-commuting logarithm
+calculation. Equivalently, $\operatorname{ad}_{\log a}$ acts diagonally on
+$(bc)^n$, so a Bernoulli/BCH operator can be applied termwise.
+
+In fact, the ordered logarithm itself can be evaluated. Put $\eta=bc$ and
+$q=e^\hbar$. Then
+
+$$
+[\log a,\eta^n]=-2n\hbar\,\eta^n.
+$$
+
+Write
+
+$$
+d=e^{-\log a}\exp\bigl(\log(1+e^{-\hbar}\eta)\bigr).
+$$
+
+The powers of $\eta$ form an abelian ideal on which
+$\operatorname{ad}_{-\log a}$ acts diagonally. Therefore the BCH identity
+
+$$
+\log(e^A e^B)
+=A+\frac{\operatorname{ad}_A}{1-e^{-\operatorname{ad}_A}}B
+$$
+
+applies termwise, and gives the ordered formula
+
+$$
+\boxed{
+-\log d
+=\log a+
+\sum_{n\ge1}(-1)^n
+\frac{\hbar}{\sinh(n\hbar)}(bc)^n.
+}
+$$
+
+Therefore $H_q^\vee=-\log d$ has the expansion
+
+$$
+H_q^\vee
+=\log a+
+\left(-1+\frac{\hbar^2}{6}+O(\hbar^4)\right)bc
++\left(\frac12-\frac{\hbar^2}{3}+O(\hbar^4)\right)(bc)^2
++\cdots.
+$$
+
+These coefficients agree with the independent hbar-truncated step-up
+calculation. Mixed $bc\,\xi^r$ terms seen in the commutative realization should
+therefore be interpreted as contributions of the unresolved star/PBW
+identification, not as terms in this ordered $O_q(SL_2)$ normal form.
+
+## 2.2. Quantum Gauss 座標と位相的 PBW basis
+
+$d$ を可逆化し、
+
+$$
+x=bd^{-1},\qquad y=cd,\qquad z=-\log d
+$$
+
+と置く。FRT relations から
+
+$$
+dx=qxd,\qquad dy=qyd,
+$$
+
+$$
+xy=q^{-1}bc,
+\qquad
+yx=qbc,
+\qquad
+xy=q^{-2}yx.
+$$
+
+$d=e^{-z}$ なので
+
+$$
+[z,x]=-\hbar x,
+\qquad
+[z,y]=-\hbar y.
+$$
+
+逆に
+
+$$
+d=e^{-z},\qquad b=xe^{-z},\qquad c=ye^z,
+$$
+
+かつ $bc=qxy$ と量子行列式から
+
+$$
+a=(1+xy)e^z.
+$$
+
+従って $(a,b,c,d)$ と $(x,y,z)$ は完備化後に相互に復元できる。
+これらは iterated Ore extension の関係式を満たすため、
+
+$$
+\{x^iy^jz^k\}_{i,j,k\ge0}
+$$
+
+は位相的 PBW basis である。
+
+## 2.3. Coregular action
+
+$u\in U_\hbar(\mathfrak{sl}_2)$ に対し
+
+$$
+\partial_u(f)=f_{(1)}\langle f_{(2)},u\rangle
+$$
+
+と定める。すると
+
+$$
+\partial_{uv}=\partial_u\partial_v,
+\qquad
+\langle f,u\rangle=\varepsilon(\partial_u f).
+$$
+
+行列係数の余積から
+
+$$
+\begin{array}{c|cccc}
+&a&b&c&d\\ \hline
+\partial_E&0&a&0&c\\
+\partial_F&b&0&d&0\\
+\partial_H&a&-b&c&-d\\
+\partial_K&qa&q^{-1}b&qc&q^{-1}d
+\end{array}
+$$
+
+を得る。R派の余積により積に対する作用は
+
+$$
+\partial_E(fg)=f\partial_E(g)+\partial_E(f)\partial_K(g),
+$$
+
+$$
+\partial_F(fg)=\partial_F(f)g+\partial_{K^{-1}}(f)\partial_F(g),
+$$
+
+$$
+\partial_H(fg)=\partial_H(f)g+f\partial_H(g).
+$$
+
+Gauss 座標上では
+
+$$
+\partial_K(x)=x,
+\quad
+\partial_K(y)=y,
+\quad
+\partial_K(z)=z+\hbar,
+$$
+
+$$
+\partial_H(x)=\partial_H(y)=0,
+\qquad
+\partial_H(z)=1,
+$$
+
+$$
+\partial_F(x)=\partial_F(z)=0,
+\qquad
+\partial_F(y)=d^2,
+$$
+
+$$
+\partial_E(x)=qd^{-2},
+\qquad
+\partial_E(y)=q^{-1}y^2d^{-2},
+\qquad
+\partial_E(z)\in(y).
+$$
+
+最後の3式では、逆元への作用
+
+$$
+\partial_E(d^{-1})=-q\,d^{-1}cd^{-1}
+$$
+
+と量子行列式を使った。
+
+## 2.4. Master pairing formula
+
+まず $d^2y=q^2yd^2$ と q-Leibniz 則から帰納的に
+
+$$
+\partial_F(y^j)=q^{j-1}[j]_q\,y^{j-1}d^2
+$$
+
+を得る。従って
+
+$$
+\partial_F^j(y^j)=q^{\binom j2}[j]_q!\,d^{2j},
+$$
+
+$$
+\partial_F^j\bigl(x^iy^jp(z)\bigr)
+=q^{\binom j2}[j]_q!\,x^id^{2j}p(z).
+$$
+
+$s<j$ なら $y^{j-s}$ が残り、$s>j$ なら 0 なので、counit へ寄与するのは
+$s=j$ の場合だけである。
+
+次に両側 ideal $(y)$ による商を考える。商の中では
+
+$$
+\partial_E(d)=\partial_E(z)=0,
+\qquad
+\partial_E(x)=qd^{-2},
+\qquad
+d^{-2}x=q^{-2}xd^{-2}.
+$$
+
+帰納法により
+
+$$
+\partial_E(x^m)
+\equiv q^{2-m}[m]_q x^{m-1}d^{-2}
+\pmod{(y)}.
+$$
+
+さらに任意の整数 $N$ と形式級数 $p(z)$ に対し
+
+$$
+\partial_E\bigl(x^m d^N p(z)\bigr)
+\equiv
+q^{2-m-N}[m]_q x^{m-1}d^{N-2}p(z+\hbar)
+\pmod{(y)}.
+$$
+
+これを $m=i,i-1,\dots,1$ と反復すると
+
+$$
+\partial_E^i\bigl(x^id^{2j}p(z)\bigr)
+\equiv
+q^{\binom{i+1}{2}-2ij}[i]_q!
+ d^{2j-2i}p(z+i\hbar)
+\pmod{(y)}.
+$$
+
+したがって counit を取れば
+
+$$
+\varepsilon\!\left(\partial_E^i(x^id^{2j}p(z))\right)
+=
+q^{\binom{i+1}{2}-2ij}[i]_q!\,p(i\hbar).
+$$
+
+$H$ は $z$ の通常微分として作用するため、以上を合成して
+
+$$
+\boxed{
+\begin{aligned}
+&\left\langle x^iy^jp(z),E^rF^sH^t\right\rangle\\
+&\quad=
+\delta_{ir}\delta_{js}
+q^{\binom j2+\binom{i+1}{2}-2ij}
+[i]_q![j]_q!\,p^{(t)}(i\hbar).
+\end{aligned}
+}
+$$
+
+を得る。
+
+## 2.5. Dual PBW basis
+
+$p(z)=(z-i\hbar)^k/k!$ と取れば
+
+$$
+p^{(t)}(i\hbar)=\delta_{kt}.
+$$
+
+よって
+
+$$
+\boxed{
+\bigl(E^iF^jH^k\bigr)_{q,R}^\vee
+=
+\frac{q^{2ij-\binom{i+1}{2}-\binom j2}}
+{[i]_q!\,[j]_q!\,k!}
+(bd^{-1})^i(cd)^j(-\log d-i\hbar)^k.
+}
+$$
+
+特に $E_{q,R}^\vee=q^{-1}bd^{-1}$、$F_{q,R}^\vee=cd$、
+$H_{q,R}^\vee=-\log d$ である。
+
+# 3. 計算設計とキャッシュ
+
+## 3.1. 非可換正規形に依存するキャッシュ
+
+Reusable computations must be cached only after a noncommutative normal form
+has been fixed.  A cache key must include at least
+
+```text
+(coproduct_label, FRT_q_orientation, qdet_convention, PBW_order,
+ coordinate_normal_order, hbar_cutoff, coordinate_degree, total_J_degree,
+ ordered_monomial, enveloping_word)
+```
+
+The recommended normal-form pipeline is:
+
+1. rewrite every coordinate word using the chosen $O_q(SL_2)$ relations;
+2. reduce quantum determinant occurrences using the declared orientation;
+3. serialize the resulting **ordered word**, not only its exponent vector;
+4. cache q-difference actions, pairings, and matrix rows separately;
+5. cache solved coefficient matrices by cutoff only after residual verification;
+6. invalidate the cache whenever R/L, q orientation, determinant, or PBW order
+   changes.
+
+In particular, commutative keys such as `(power_a,power_b,power_c,power_d)` are
+unsafe before normal ordering: two words with the same exponent counts may
+differ by a q-power or a lower-order correction.
+
+# 4. 実行可能な q-difference 計算
+
+$$
+\begin{aligned}
+\rho_q(E)&=cD_d+aD_bq^{\theta_c-\theta_d},\\
+\rho_q(F)&=bD_a+q^{-\theta_a+\theta_b}dD_c,\\
+\rho_q(H)&=\theta_a-\theta_b+\theta_c-\theta_d,
+\end{aligned}
+$$
+
+$$
+D_x=x^{-1}[\theta_x]_q,
+\qquad
+[\theta_x]_q=\frac{q^{\theta_x}-q^{-\theta_x}}{q-q^{-1}}.
+$$
+
+作用素の積は右端から作用させ、PBW 順序は
+$E^iF^jH^k$ とする。pairing は行列座標の単位元
+$(a,b,c,d)=(1,0,0,1)$ での評価
+
+$$
+\langle f,E^iF^jH^k\rangle_q
+:={\left.\rho_q(E)^i\rho_q(F)^j\rho_q(H)^k f\right|}_{(1,0,0,1)}
+$$
+
+で定義する。
+
+この段階では、これは添付メモの **commutative matrix-coordinate
+realization** に対する pairing 実験である。量子座標環の非可換積と
+PBW identification を同時に入れた $O_q(SL_2)$ の定式化は、後段で別に
+固定する必要がある。したがって以下の結果は、まずこの q-差分表現に対する
+`verified-computationally` な step-up 結果として扱う。
+
+## 4.1. 古典極限での基準
+
+$q=1$ では、既存の古典 QMD
+`sl2_dualbasis.qmd` の結果
+
+$$
+E^\vee=b+b\xi-b^2c+\cdots,
+\qquad
+F^\vee=c-c\xi+bc^2+c\xi^2+\cdots,
+$$
+
+$$
+H^\vee=\xi-bc-\frac12\xi^2+\frac13\xi^3+\cdots
+$$
+
+へ戻ることを検証する。ここで $\xi=a-1$ である。
+
+## 4.2. Symbolics による q-差分作用素
+
+`Symbolics` は `algebra.jl/Project.toml` に既に宣言されている依存であり、
+q は記号のまま扱う。線形方程式は Symbolics の自動 solver ではなく、
+q を含む係数体上の exact Gaussian elimination で解く。これにより、
+浮動小数の係数を混入させずに step-up を行う。
+
+```{julia}
+using Symbolics
+
+@variables q a b c d z h
+const XI = a - 1
+
+function shift(expr, changes::Pair...)
+    Symbolics.substitute(expr, Dict(changes))
+end
+
+function dq(expr, variable)
+    Symbolics.simplify((shift(expr, variable => q * variable) -
+                        shift(expr, variable => q^(-1) * variable)) /
+                       ((q - q^(-1)) * variable))
+end
+
+theta(expr, variable) =
+    Symbolics.simplify(variable * Symbolics.derivative(expr, variable))
+
+function rho_E(expr)
+    # c D_d + a D_b q^(theta_c - theta_d)
+    first = c * dq(expr, d)
+    shifted = shift(expr, c => q * c, d => q^(-1) * d)
+    second = a * dq(shifted, b)
+    Symbolics.simplify(first + second)
+end
+
+function rho_F(expr)
+    # b D_a + q^(-theta_a + theta_b) d D_c
+    first = b * dq(expr, a)
+    second = shift(d * dq(expr, c), a => q^(-1) * a, b => q * b)
+    Symbolics.simplify(first + second)
+end
+
+function rho_H(expr)
+    Symbolics.simplify(theta(expr, a) - theta(expr, b) +
+                       theta(expr, c) - theta(expr, d))
+end
+
+function at_identity(expr)
+    Symbolics.simplify(shift(expr, a => 1, b => 0, c => 0, d => 1))
+end
+
+function apply_word(expr, word::Tuple)
+    out = expr
+    for generator in reverse(word)
+        out = generator == 1 ? rho_E(out) :
+              generator == 2 ? rho_F(out) : rho_H(out)
+    end
+    at_identity(out)
+end
+
+function exponent_compositions(degree)
+    [(i, j, degree - i - j)
+     for i in 0:degree for j in 0:(degree - i)]
+end
+
+function word_from_exponent(exponent)
+    i, j, k = exponent
+    Tuple(vcat(fill(1, i), fill(2, j), fill(3, k)))
+end
+
+function coordinate_monomials(degree)
+    [b^i * c^j * XI^(degree - i - j)
+     for i in 0:degree for j in 0:(degree - i)]
+end
+
+function exact_rational(x)
+    expression = Symbolics.toexpr(Symbolics.Num(x))
+    expression isa Integer && return BigInt(expression) // BigInt(1)
+    expression isa Rational &&
+        return BigInt(numerator(expression)) // BigInt(denominator(expression))
+    error("not a rational constant: $expression")
+end
+
+function exact_division(x, y)
+    if isempty(Symbolics.get_variables(x)) && isempty(Symbolics.get_variables(y))
+        return Symbolics.Num(exact_rational(x) / exact_rational(y))
+    end
+    Symbolics.simplify(x / y)
+end
+
+function solve_exact(A, rhs)
+    n, m = size(A)
+    n == m || error("expected a square system")
+    augmented = [Symbolics.Num(A[row, col])
+                 for row in 1:n, col in 1:m]
+    augmented = hcat(augmented,
+                     [Symbolics.Num(rhs[row]) for row in 1:n])
+
+    for column in 1:n
+        pivot = findfirst(row ->
+            !iszero(Symbolics.simplify(augmented[row, column])), column:n)
+        pivot === nothing && error("singular system at column $column")
+        pivot += column - 1
+        if pivot != column
+            augmented[[column, pivot], :] = augmented[[pivot, column], :]
+        end
+
+        pivot_value = augmented[column, column]
+        augmented[column, :] = [exact_division(value, pivot_value)
+                                for value in augmented[column, :]]
+        for row in 1:n
+            row == column && continue
+            factor = augmented[row, column]
+            iszero(Symbolics.simplify(factor)) && continue
+            augmented[row, :] = [
+                Symbolics.simplify(augmented[row, j] - factor * augmented[column, j])
+                for j in 1:(m + 1)
+            ]
+        end
+    end
+    [Symbolics.simplify(augmented[row, m + 1]) for row in 1:n]
+end
+```
+
+The degree-1 pairing is the identity matrix:
+
+```{julia}
+base_pairing = [apply_word(f, word)
+                for f in (b, c, XI), word in ((1,), (2,), (3,))]
+println(base_pairing)
+@assert base_pairing == [1 0 0; 0 1 0; 0 0 1]
+
+# The attached R-convention q-difference operators preserve the quantum determinant.
+quantum_determinant = a*d - q^(-1)*b*c
+@assert iszero(Symbolics.simplify(rho_E(quantum_determinant)))
+@assert iszero(Symbolics.simplify(rho_F(quantum_determinant)))
+@assert iszero(Symbolics.simplify(rho_H(quantum_determinant)))
+```
+
+## 4.3. Full-condition q-step-up
+
+At degree $r$, write
+
+$$
+D_X^{(r)}=D_X^{(r-1)}
++\sum_{p+q+s=r}x^{(X)}_{p,q,s}b^pc^q\xi^s.
+$$
+
+Unlike the classical derivation, q-difference corrections can change lower
+degree pairings.  Therefore each cutoff solves **all conditions from degree 1
+through degree $r$ simultaneously**, rather than updating only the newest
+degree.  The coefficients are obtained by imposing
+
+$$
+\left\langle D_X^{(r)},E^iF^jH^k\right\rangle_q=0
+\qquad (i+j+k=r).
+$$
+
+```{julia}
+function all_coordinate_monomials(cutoff)
+    Any[m for degree in 1:cutoff for m in coordinate_monomials(degree)]
+end
+
+function all_pbw_words(cutoff)
+    words = Any[(1,), (2,), (3,)]
+    append!(words, [word_from_exponent(e)
+                    for degree in 2:cutoff
+                    for e in exponent_compositions(degree)])
+    words
+end
+
+function solve_full_cutoff(cutoff)
+    coordinate_basis = all_coordinate_monomials(cutoff)
+    enveloping_basis = all_pbw_words(cutoff)
+    pairing_matrix = [0*q + apply_word(monomial, word)
+                      for word in enveloping_basis,
+                          monomial in coordinate_basis]
+
+    duals = Any[]
+    for target in 1:3
+        rhs = [0*q + (word == (target,) ? 1 : 0)
+               for word in enveloping_basis]
+        coefficients = solve_exact(pairing_matrix, rhs)
+        push!(duals, Symbolics.simplify(sum(
+            coefficients[j] * coordinate_basis[j]
+            for j in eachindex(coordinate_basis))))
+    end
+    duals
+end
+
+q_duals = Dict{Int,Vector{Any}}()
+for degree in 1:3
+    q_duals[degree] = solve_full_cutoff(degree)
+end
+```
+
+To display the formulas in the $(b,c,\xi)$ chart, substitute $a=1+\xi$.
+Let
+
+$$
+\mathfrak m=(b,c,\xi)
+$$
+
+be the augmentation ideal at the identity. A degree-$N$ step-up result is an
+identity modulo $\mathfrak m^{N+1}$; equivalently, omitted coordinate terms are
+written $O(\mathfrak m^{N+1})$.
+
+For generic q, however, the coordinate-degree filtration alone is not stable
+under q-shifts. Indeed,
+
+$$
+q(1+\xi)-1=(q-1)+q\xi,
+$$
+
+so a higher coordinate-degree correction can feed back into lower pairings
+through the constant term $q-1$. This is why full-condition solutions at
+successive generic-q cutoffs need not be nested.
+
+After setting $q=e^\hbar$, the natural formal filtration is instead
+
+$$
+\mathfrak J=(\hbar,b,c,\xi),
+$$
+
+with total degree
+
+$$
+\deg_{\mathfrak J}(\hbar^r b^i c^j\xi^k)=r+i+j+k.
+$$
+
+Now $q-1=\hbar+O(\hbar^2)$ has positive filtration degree, and the q-shift is
+continuous in the $\mathfrak J$-adic topology. A compatible all-orders formal
+construction should therefore solve modulo $\mathfrak J^{N+1}$, not only
+modulo $\mathfrak m^{N+1}$ with generic q held at degree zero.
+
+```{julia}
+for degree in 1:3
+    println("degree $degree")
+    for (label, dual) in zip(("E", "F", "H"), q_duals[degree])
+        println("  $label^vee = ", Symbolics.simplify(shift(dual, a => 1 + z)))
+    end
+end
+```
+
+The degree-2 result is
+
+$$
+E_q^\vee=b+b\xi+O(\mathfrak m^3),
+$$
+
+$$
+F_q^\vee
+=(2-q)c-qc\xi+O(\mathfrak m^3),
+$$
+
+and
+
+$$
+H_q^\vee
+=\xi-\frac12\xi^2
++\frac{q+q^{-1}-4}{2}\,bc+O(\mathfrak m^3).
+$$
+
+At $q=1$ this becomes
+
+$$
+E_q^\vee=b+b\xi+O(\mathfrak m^3),
+\qquad
+F_q^\vee=c-c\xi+O(\mathfrak m^3),
+\qquad
+H_q^\vee=\xi-bc-\frac12\xi^2+O(\mathfrak m^3).
+$$
+
+The degree-3 full-condition solve gives
+
+$$
+E_q^\vee=b+b\xi-b^2c+O(\mathfrak m^4),
+$$
+
+$$
+F_q^\vee
+=(q^2-3q+3)c+(2q^2-3q)c\xi+q^2c\xi^2+bc^2
++O(\mathfrak m^4),
+$$
+
+while the $H$ coefficient acquires further rational functions of $q$.
+The exact expressions are emitted by the executable cell rather than manually
+normalized into a conjectural closed form.
+
+## 4.4. 有限次数検証と古典極限
+
+```{julia}
+function coefficient_in_xi_chart(expr, exponent)
+    p, r, s = exponent
+    out = shift(expr, a => 1 + z)
+    for _ in 1:p
+        out = Symbolics.derivative(out, b)
+    end
+    for _ in 1:r
+        out = Symbolics.derivative(out, c)
+    end
+    for _ in 1:s
+        out = Symbolics.derivative(out, z)
+    end
+    out = shift(out, b => 0, c => 0, z => 0)
+    exact_division(out, Symbolics.Num(factorial(p) * factorial(r) * factorial(s)))
+end
+
+for degree in 1:3
+    for dual in q_duals[degree]
+        classical = Symbolics.simplify(shift(dual, q => 1))
+        println("q=1: ", Symbolics.simplify(shift(classical, a => 1 + z)))
+    end
+end
+
+classical_degree_2 = [
+    b + b * XI,
+    c - c * XI,
+    XI - b * c - (1 // 2) * XI^2,
+]
+classical_degree_3 = [
+    b + b * XI - b^2 * c,
+    c - c * XI + b * c^2 + c * XI^2,
+    XI - b * c - (1 // 2) * XI^2 + (1 // 3) * XI^3,
+]
+for (degree, expected) in ((2, classical_degree_2), (3, classical_degree_3))
+    for (dual, target) in zip(q_duals[degree], expected)
+        residual = shift(dual - target, q => 1, a => 1 + z)
+        @assert iszero(Symbolics.simplify(residual))
+    end
+end
+
+for degree in 2:3
+    for (dual, word) in zip(q_duals[degree],
+                            [word_from_exponent(e)
+                             for e in exponent_compositions(degree)])
+        # Each generator dual is checked against the entire degree-r PBW row.
+        words = [word_from_exponent(e) for e in exponent_compositions(degree)]
+        residuals = [apply_word(dual, w) for w in words]
+        @assert all(iszero(Symbolics.simplify(v)) for v in residuals)
+    end
+end
+
+println("q step-up verified exactly through degree 3")
+```
+
+## 4.5. $\hbar^0,\hbar^1$ truncation
+
+Put $q=e^\hbar$.  For a rational q-expression, the first two hbar
+coefficients can be extracted without expanding the full rational function:
+
+$$
+f(e^\hbar)=f(1)+\hbar\,\left.\frac{\partial f}{\partial q}\right|_{q=1}
++O(\hbar^2).
+$$
+
+```{julia}
+function hbar01(expr)
+    constant = Symbolics.simplify(shift(expr, q => 1))
+    linear = Symbolics.simplify(
+        shift(Symbolics.derivative(expr, q), q => 1))
+    Symbolics.simplify(constant + h * linear)
+end
+
+for degree in 2:3
+    println("hbar^0+hbar^1, degree $degree")
+    for (label, dual) in zip(("E", "F", "H"), q_duals[degree])
+        println("  $label^vee = ",
+                Symbolics.simplify(shift(hbar01(dual), a => 1 + z)))
+    end
+end
+
+hbar_degree_2 = [
+    b + b*z,
+    (1-h)*c + (-1-h)*c*z,
+    z - b*c - (1//2)*z^2,
+]
+hbar_degree_3 = [
+    b + b*z - b^2*c,
+    (1-h)*c + (-1+h)*c*z + (1+2*h)*c*z^2 + b*c^2,
+    z - b*c - (1//2)*z^2 + (1//3)*z^3,
+]
+for (degree, expected) in ((2, hbar_degree_2), (3, hbar_degree_3))
+    for (dual, target) in zip(q_duals[degree], expected)
+        residual = shift(hbar01(dual) - target, a => 1 + z)
+        @assert iszero(Symbolics.simplify(residual))
+    end
+end
+println("hbar^0+hbar^1 formulas verified through degree 3")
+```
+
+## 4.6. $\hbar^2$ truncation
+
+The same extraction through hbar^2 is
+
+$$
+f(e^\hbar)=f(1)+\hbar f_q(1)
++\frac{\hbar^2}{2}\bigl(f_{qq}(1)+f_q(1)\bigr)+O(\hbar^3).
+$$
+
+```{julia}
+function hbar02(expr)
+    f0 = Symbolics.simplify(shift(expr, q => 1))
+    f1 = Symbolics.simplify(
+        shift(Symbolics.derivative(expr, q), q => 1))
+    f2 = Symbolics.simplify(
+        shift(Symbolics.derivative(Symbolics.derivative(expr, q), q), q => 1))
+    Symbolics.simplify(f0 + h*f1 + (1//2)*h^2*(f2 + f1))
+end
+
+hbar02_degree_2 = [
+    b + b*z,
+    (1-h-(1//2)*h^2)*c + (-1-h-(1//2)*h^2)*c*z,
+    z - b*c - (1//2)*z^2 + (1//2)*h^2*b*c,
+]
+hbar02_degree_3 = [
+    b + b*z - b^2*c,
+    (1-h+(1//2)*h^2)*c + (-1+h+(5//2)*h^2)*c*z
+        + (1+2*h+2*h^2)*c*z^2 + (1-h^2)*b*c^2,
+    z - b*c - (1//2)*z^2 + (1//3)*z^3
+        + (1//6)*h^2*b*c - h^2*b*c*z,
+]
+for (degree, expected) in ((2, hbar02_degree_2), (3, hbar02_degree_3))
+    for (dual, target) in zip(q_duals[degree], expected)
+        residual = shift(hbar02(dual) - target, a => 1 + z)
+        normalized = Symbolics.simplify(Symbolics.expand(residual))
+        @assert iszero(normalized)
+    end
+end
+println("hbar^0+hbar^1+hbar^2 formulas verified through degree 3")
+```
+
+The first-order result is therefore
+
+$$
+\begin{aligned}
+E_q^\vee&=b+b\xi+O(\mathfrak m^3)+O(\hbar^2),\\
+F_q^\vee&=(1-\hbar)c-(1+\hbar)c\xi
+ +O(\mathfrak m^3)+O(\hbar^2),\\
+H_q^\vee&=\xi-bc-\frac12\xi^2
+ +O(\mathfrak m^3)+O(\hbar^2)
+\end{aligned}
+$$
+
+at degree 2, and
+
+$$
+F_q^\vee
+=(1-\hbar)c+(-1+\hbar)c\xi+(1+2\hbar)c\xi^2+bc^2
+ +O(\mathfrak m^4)+O(\hbar^2)
+$$
+
+at degree 3.  Thus the first-order deformation is concentrated in the
+$E/F$ coordinate directions; the $H$ direction starts at even hbar order in
+the tested range.
+
+## 4.7. 指数2の独立 matrix-coefficient 検証
+
+次の Python/SymPy program を使い、q-difference solverとは独立に
+$0\le i,j\le2$ を検証した。
+
+```python
+import sympy as s
+from functools import reduce
+
+q = s.symbols("q", nonzero=True)
+I = s.eye(2)
+E = s.Matrix([[0, 1], [0, 0]])
+F = s.Matrix([[0, 0], [1, 0]])
+K = s.diag(q, q**-1)
+Ki = s.diag(q**-1, q)
+
+def kron_all(xs):
+    return reduce(s.kronecker_product, xs)
+
+def iter_E(n):
+    return sum((kron_all([I]*r + [E] + [K]*(n-r-1))
+                for r in range(n)), s.zeros(2**n))
+
+def iter_F(n):
+    return sum((kron_all([Ki]*r + [F] + [I]*(n-r-1))
+                for r in range(n)), s.zeros(2**n))
+
+def index(bits):
+    value = 0
+    for bit in bits:
+        value = 2*value + bit
+    return value
+
+def pairing(i, j):
+    n = i + j
+    U = iter_E(n)**i * iter_F(n)**j
+    row = [0]*i + [1]*j   # b=t_12, c=t_21
+    col = [1]*i + [0]*j
+    return s.factor(U[index(row), index(col)])
+
+def qnum(n):
+    return s.cancel((q**n-q**(-n))/(q-q**(-1)))
+
+def qfact(n):
+    return s.prod(qnum(r) for r in range(1, n+1))
+
+for i in range(3):
+    for j in range(3):
+        if i+j == 0:
+            continue
+        assert s.factor(pairing(i, j)-qfact(i)*qfact(j)) == 0
+
+# Independent verification of the corrected master formula, including
+# the q^{-1} in E^vee and the Cartan translation z -> z+i*hbar.
+hbar, z = s.symbols("hbar z")
+
+def choose2(n):
+    return n*(n-1)//2
+
+for i in range(3):
+    for j in range(3):
+        for k in range(3):
+            coefficient = q**(2*i*j - i*(i+1)//2 - choose2(j)) \
+                / (qfact(i)*qfact(j)*s.factorial(k))
+            p = (z-i*hbar)**k
+            root_scalar = q**(choose2(j) + i*(i+1)//2 - 2*i*j) \
+                * qfact(i)*qfact(j)
+            for r in range(3):
+                for ss in range(3):
+                    for t in range(3):
+                        raw = 0
+                        if (r, ss) == (i, j):
+                            raw = root_scalar * s.diff(p, z, t).subs(z, i*hbar)
+                        value = s.factor(coefficient*raw)
+                        expected = 1 if (r, ss, t) == (i, j, k) else 0
+                        assert s.factor(value-expected) == 0
+```
+
+同じ master formula を notebook の Julia kernel でも総当たりする。
+
+```{julia}
+choose2(n) = n*(n-1) ÷ 2
+qnum_int(n) = n == 0 ? one(q) :
+    Symbolics.simplify((q^n-q^(-n))/(q-q^(-1)))
+qfact_int(n) = prod((qnum_int(r) for r in 1:n); init=one(q))
+
+for i in 0:2, j in 0:2, k in 0:2
+    coefficient = q^(2*i*j - i*(i+1)÷2 - choose2(j)) /
+        (qfact_int(i)*qfact_int(j)*factorial(k))
+    polynomial = (z-i*h)^k
+    root_scalar = q^(choose2(j)+i*(i+1)÷2-2*i*j) *
+        qfact_int(i)*qfact_int(j)
+    for r in 0:2, s in 0:2, t in 0:2
+        raw = 0
+        if (r,s) == (i,j)
+            derivative = polynomial
+            for _ in 1:t
+                derivative = Symbolics.derivative(derivative,z)
+            end
+            raw = root_scalar * shift(derivative,z => i*h)
+        end
+        expected = (r,s,t) == (i,j,k) ? 1 : 0
+        @assert iszero(Symbolics.simplify(coefficient*raw-expected))
+    end
+end
+println("corrected master formula verified for all indices <= 2")
+```
+
+## 4.8. degree 4 rational backend の修正
+
+degree 4 の generic-q 計算では、Laurent polynomial 分数の共通 content
+だけを除く必要がある。失敗版は分子・分母を別々に primitive 化し、分数の
+値そのものを変えていた。修正の中核は次である。
+
+```julia
+function normalize_fraction(num::QPoly, den::QPoly)
+    iszero(den) && error("zero denominator")
+    iszero(num) && return QFrac(zero(QPoly), one(QPoly), Val(:raw))
+
+    shift = min(minimum(keys(num.terms)), minimum(keys(den.terms)))
+    num = qshift(num, -shift)
+    den = qshift(den, -shift)
+
+    common = gcd(content(num), content(den))
+    num = QPoly(Dict(k => v ÷ common for (k, v) in num.terms))
+    den = QPoly(Dict(k => v ÷ common for (k, v) in den.terms))
+
+    # Do not primitive-normalize num and den independently.
+    return QFrac(num, den, Val(:raw))
+end
+```
+
+この修正後、degree 4 の $34\times34$ full-condition system は generic q
+で linear pairing $I_3$、全 residual 0 となった。
+
+# 5. 証拠範囲と未実装境界
+
+The mathematical result and the executable evidence have different scopes.
+
+**Mathematical result (`proved/agent`, owner not yet checked).** In the localized,
+ordered noncommutative algebra $O_q(SL_2)[d^{-1}]$, the quantum Gauss-coordinate
+argument proves
+
+$$
+\bigl(E^iF^jH^k\bigr)_{q,R}^\vee
+=
+\frac{q^{2ij-\binom{i+1}{2}-\binom j2}}
+{[i]_q!\,[j]_q!\,k!}
+(bd^{-1})^i(cd)^j(-\log d-i\hbar)^k.
+$$
+
+The ordered BCH calculation proves the displayed expansion of $-\log d$.
+
+**Executable evidence.** The commutative q-difference realization verifies:
+
+- preservation of $ad-q^{-1}bc$;
+- exact generic-q full-condition duals through coordinate degree 3;
+- $q\to1$ recovery of the classical notebook;
+- $\hbar^0,\hbar^1,\hbar^2$ coefficients through degree 3;
+- an independent fundamental-representation matrix-coefficient table for every
+  $0\le i,j\le2$;
+- the degree-4 $34\times34$ system at generic q using the corrected
+  $\mathbb Q(q)$ backend, with identity linear pairing and all residuals zero;
+- independent exact specializations at $q=2,3$ with the same degree-4 result.
+- package regression tests: 1,921/1,921 pass, including 1,526 dedicated
+  q-dual tests that reject the withdrawn formula and verify the corrected
+  master formula through exponent 2.
+
+The remaining implementation boundary is the explicit star/PBW identification
+between the commutative q-difference realization and ordered noncommutative
+$O_q(SL_2)$. It does not affect the localized algebraic formula, but it is
+required before the commutative notebook output can be called a direct
+implementation of the noncommutative dual basis.
+
+# 6. 導出・発見プロセス
+
+## 6.1. セッションと一次資料
+
+- Hermes session ID: `20260825_231833_af9ff5`
+- Hermes profile: `research`
+- Session source: desktop
+- 主な旧計算: `lib/algebra/Execution/SLnDual/sl2_dualbasis.mlx`
+- 古典版 notebook: `notebooks/sl2_dualbasis.qmd`
+- q差分作用素の入力資料:
+  `ChatGPT-SL2左不変微分作用素-20260826-0041.md`
+
+この notebook が成果物の正本であり、`.research-scratch/` は一時 probe と
+render 出力にのみ使った。一時 probe で得た再利用可能な定義・検証・式は
+すべて本 notebook へ移した。
+
+## 6.2. Owner prompts と方針の推移
+
+| 段階 | owner の指示・修正 | 研究上の変更 |
+|---|---|---|
+| source identification | 「SL2+ではなくSL2」 | Borel版を除外し full `sl2_dualbasis.mlx` を一次sourceに固定 |
+| executable port | 「algebra.jl側でqmd化して動かす」 | MATLAB symbolic solve を exact Julia step-up へ移植 |
+| classical closure | 「closed formulaは余裕」「powerとscalar調整」 | $b/d,cd,-\log d$ と factorial による古典一般式を証明 |
+| q deformation | 「q=1と同様にstep up」 | q-difference pairing と full-condition solver を導入 |
+| convention control | 「Kが右か左かでR派/L派」 | 余積 convention を全計算・cache keyに明示 |
+| coefficient guidance | 「detはq-det、$i!$は$[i]_q!$、pairing係数もq」 | qdet、q-factorial、fundamental pairingを統合 |
+| formal filtration | 「$q=e^\hbar$としてhbarで見当」 | $\mathfrak J=(\hbar,b,c,\xi)$ total filtrationを採用 |
+| noncommutative warning | 「$a$と$bc$が非可換」「$H$ dualは$-\log d$では」 | 単純なlog分離を撤回し、BCHで ordered log を導出 |
+| caching | 「使い回せる計算をcache」 | ordered-word・convention-aware cache設計を追加 |
+| precision | 「cutoffは$O(\mathfrak m^4)$と書く」 | 全有限次数式を ideal-adic big-O で記述 |
+| independent check | 「指数2まで別の方法で検証」 | iterated coproductのmatrix coefficientで $i,j\le2$ を独立検証 |
+| external review | GPT Proより「$E^\vee$の$q^{-1}$、Cartan shift、K pairingが欠落」と指摘 | 旧一般式を撤回し coregular master formula から定理を再証明 |
+| presentation | 「数学→証明→program→発見過程」 | 本 notebook を現在の順序へ全面再編 |
+
+## 6.3. 発見の主要段階
+
+1. 古典計算を degree 6 まで再実行し、$E^\vee=b/d$、$F^\vee=cd$、
+   $H^\vee=-\log d$ を認識した。
+2. 右不変微分作用素を quantum Gauss coordinates で三角化し、古典 PBW
+   dual basis を証明した。
+3. q差分版では高 coordinate degree が低次数 pairing に戻ることを発見し、
+   newest-degree-only solver を full-condition solver に置き換えた。
+4. generic Symbolics の degree-4 出力が $\langle H^\vee,H\rangle=3/4$ を
+   返した。これは数学的障害ではなく、symbolic rational cancellation の
+   失敗だった。
+5. 自作 $\mathbb Q(q)$ backend の分数正規化にも、分子・分母を別々に
+   primitive 化して値を変えるバグがあった。共通contentだけを除くよう
+   修正すると、generic degree 4 は全 residual 0 になった。
+6. Luna に具体検算を委譲し、$q=2,3$ specialization でも degree 4 residual
+   0 を独立確認した。別の Luna run は local MCP hook 障害で停止し、結果を
+   採用しなかった。
+7. $a(bc)=q^{-2}(bc)a$ を使う BCH により、$-\log d$ の ordered closed
+   formulaを得た。
+8. Gauss factor coordinate $d^{-1}c$ と PBW-$F$ dual $cd$ を一度混同したが、
+   classical limit と fundamental pairing で検出し撤回した。
+9. 初期の指数2検証は $b^ic^j$ の matrix coefficient だけを見ており、
+   $d^{j-i}$ と coproduct内の $K$ pairing を落としていた。GPT Pro の指摘で
+   これを検出し、coregular action を用いる master formula へ置換した。
+10. $K:z\mapsto z+\hbar$ により Cartan dual は $z^k$ ではなく
+    $(z-i\hbar)^k$ であることを証明した。
+
+## 6.4. 使用した計算方針
+
+- q-difference operators は Symbolics で generic q のまま評価した。
+- 係数線形系は full-condition の square system として解いた。
+- degree 4 は BigInt Laurent polynomial の分数体 backend で再検算した。
+- $q=e^\hbar$ の係数は chain rule
+  $f(e^\hbar)=f(1)+\hbar f_q(1)+\frac{\hbar^2}{2}(f_{qq}(1)+f_q(1))+\cdots$
+  で抽出した。
+- q-factorial と cross weight は q-difference solverとは独立に、基本表現の
+  iterated coproduct matrix coefficientから検証した。
+
+再現用の主要コマンドは
+
+```text
+JULIA_PKGIMAGES=no quarto render notebooks/qsl2_dualbasis.qmd
+```
+
+である。指数2の独立検証は SymPy の exact matrix coefficient calculationを
+使ったが、その数学的内容と結果表は本 notebook の §2.2 に収載した。
+
+## 6.5. テスト設計の失敗と修正
+
+旧テストが誤式を弾けなかった原因は次の通り。
+
+1. commutative q-difference realization の residual を、noncommutative
+   $O_q(SL_2)$ の定理の検証だと誤認した。
+2. $q=1$ 回帰を重視しすぎたため、$q^{-1}$ と $z-i\hbar$ の欠落が消えた。
+3. $b^ic^j$ の matrix coefficientだけを検査し、$d^{j-i}$ と coproduct内の
+   $K$ pairingを落とした。
+4. 仮定した master scalar とその逆数を掛ける循環テストがあり、誤った指数
+   でも通った。
+5. 既知の誤式を明示的に失敗させる negative regression がなかった。
+
+修正後の package test はまず
+
+$$
+\langle bd^{-1},E\rangle=q\ne1,
+\qquad
+\langle xz,E\rangle=q\hbar\ne0
+$$
+
+を確認して旧式を拒否する。次に
+
+$$
+\langle q^{-1}bd^{-1},E\rangle=1,
+\qquad
+\langle q^{-1}x(z-\hbar),E\rangle=0
+$$
+
+を確認し、coregular recurrenceから root scalar を逐次生成して、修正版
+normalizationとは独立に照合する。最後に $q=2,3$ で
+$i,j,k,r,s,t\le2$ を各 q で729組、合計1,458組検査する。

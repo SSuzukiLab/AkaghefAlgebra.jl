@@ -8,5 +8,6 @@ using AkaghefAlgebra
   include("Polynomial/polalg_tests.jl")
   include("Sparse/sparseex_tests.jl")
   include("Hopf/hopf_tests.jl")
+  include("Hopf/qsl2_dual_tests.jl")
   # include("parity/runtests_parity.jl")  # Phase D-5
 end

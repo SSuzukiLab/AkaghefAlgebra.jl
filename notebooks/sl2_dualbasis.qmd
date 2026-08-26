@@ -1,0 +1,892 @@
+---
+title: 'The dual basis for O(SL_2) — executable Julia port'
+author: 'Akaghef'
+date: '2026-08-25'
+engine: julia
+format:
+  html:
+    self-contained: true
+execute:
+  daemon: false
+---
+
+# 結論（先に）
+
+これは Borel 版ではなく、全体の $O(SL_2)$ に対する古典 $q=1$ の結果で
+ある。$\mathfrak m=(b,c,\xi)$ とし、$f\equiv_N g$ を
+$f-g\in\mathfrak m^{N+1}$ の意味に書く。この記法で、今回得られた
+有限次数 dual basis approximation は次の通り。
+
+$$
+\begin{aligned}
+E^\vee_{\le 2}&\equiv_2 b+b\xi,\\
+F^\vee_{\le 2}&\equiv_2 c-c\xi,\\
+H^\vee_{\le 2}&\equiv_2 \xi-bc-\frac12\xi^2;
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+E^\vee_{\le 3}&\equiv_3 b+b\xi-b^2c,\\
+F^\vee_{\le 3}&\equiv_3 c-c\xi+bc^2+c\xi^2,\\
+H^\vee_{\le 3}&\equiv_3 \xi-bc-\frac12\xi^2+\frac13\xi^3;
+\end{aligned}
+$$
+
+そして degree 4 まで計算すると、
+
+$$
+\begin{aligned}
+E^\vee_{\le 4}&\equiv_4 b+b\xi-b^2c-b^2c\xi,\\
+F^\vee_{\le 4}&\equiv_4 c-c\xi+bc^2+c\xi^2-c\xi^3-bc^2\xi,\\
+H^\vee_{\le 4}&\equiv_4 \xi-bc-\frac12\xi^2+\frac13\xi^3
+ -\frac14\xi^4+\frac12b^2c^2.
+\end{aligned}
+$$
+
+ここから得られる閉形式は
+
+$$
+E^\vee=\frac{b}{d},\qquad
+F^\vee=cd,\qquad
+H^\vee=-\log d,
+$$
+
+すなわち $\xi=a-1,\ \eta=bc$ を使えば
+
+$$
+E^\vee=\frac{1+\xi}{1+\eta}b,\qquad
+F^\vee=\frac{1+\eta}{1+\xi}c,\qquad
+H^\vee=\log(1+\xi)-\log(1+\eta).
+$$
+
+一般の PBW monomial に対する dual basis は、$i,j,k\ge0$ に対して
+
+$$
+\boxed{
+\bigl(E^iF^jH^k\bigr)^\vee
+=\frac1{i!\,j!\,k!}
+\left(\frac bd\right)^i(cd)^j(-\log d)^k
+}
+$$
+
+である。上に掲げた degree 2--4 の式は、この閉形式を
+$\mathfrak m=(b,c,\xi)$ の次数で展開したものにほかならない。以下で、
+この一般式を PBW 順序と右不変ベクトル場を用いて証明し、最後に QMD の
+厳密有理数計算で degree 6 まで展開を照合する。
+
+# Scope
+
+This notebook ports the **full** `sl2_dualbasis.mlx` experiment, not the
+Borel-only calculation.  The source MATLAB Live Script is:
+
+```text
+lib/algebra/Execution/SLnDual/sl2_dualbasis.mlx
+```
+
+The source document is titled
+$U_q(\mathfrak{sl}_2)\leftrightarrow F_q(SL_2)$ duality, but the calculation
+implemented there uses `Usl2Full` and `FSL2Full` at the classical value
+$q=1$.  This QMD records that same classical finite-degree experiment.
+
+We use the coordinate chart
+
+$$
+\xi=a-1,\qquad \eta=bc,
+\qquad d=\frac{1+bc}{1+\xi},
+$$
+
+where the last equality is expanded as a formal power series and truncated at
+the requested degree.  The coordinate algebra relation is
+$ad-bc=1$.
+
+The target is a filtered approximation to the three functionals dual to
+$E,F,H$:
+
+$$
+\langle E^\vee,E\rangle=\langle F^\vee,F\rangle
+=\langle H^\vee,H\rangle=1,
+\qquad
+\langle X^\vee,Y\rangle=0\quad(X\ne Y),
+$$
+
+with every candidate orthogonal to the PBW monomials of degrees $2$ through
+the current cutoff.
+
+# Exact truncated coordinate algebra
+
+The following small implementation is intentionally local to the notebook.
+It uses only Julia built-ins and `Rational{BigInt}` coefficients, so the
+calculation does not hide a floating-point or CAS dependency.
+
+```{julia}
+using LinearAlgebra
+
+const Monomial = NTuple{3,Int}
+const Rat = Rational{BigInt}
+const ZERO_MONOMIAL = (0, 0, 0)
+
+asrat(x::Rat) = x
+asrat(x::Integer) = BigInt(x) // BigInt(1)
+asrat(x::Rational) = BigInt(numerator(x)) // BigInt(denominator(x))
+
+struct Poly
+    terms::Dict{Monomial,Rat}
+end
+
+Poly() = Poly(Dict{Monomial,Rat}())
+
+function monomial(exponents::Monomial, coefficient=one(Rat))
+    c = asrat(coefficient)
+    c == 0 && return Poly()
+    Poly(Dict(exponents => c))
+end
+
+function add_term!(terms::Dict{K,Rat}, exponent::K,
+                   coefficient::Rat) where {K}
+    coefficient == 0 && return terms
+    value = get(terms, exponent, zero(Rat)) + coefficient
+    if value == 0
+        delete!(terms, exponent)
+    else
+        terms[exponent] = value
+    end
+    return terms
+end
+
+function Base.:+(p::Poly, q::Poly)
+    terms = copy(p.terms)
+    for (e, c) in q.terms
+        add_term!(terms, e, c)
+    end
+    Poly(terms)
+end
+
+Base.:-(p::Poly) = Poly(Dict(e => -c for (e, c) in p.terms))
+Base.:-(p::Poly, q::Poly) = p + (-q)
+
+Base.:(==)(p::Poly, q::Poly) = p.terms == q.terms
+
+function Base.:*(p::Poly, q::Poly)
+    terms = Dict{Monomial,Rat}()
+    for (ep, cp) in p.terms, (eq, cq) in q.terms
+        exponent = ntuple(i -> ep[i] + eq[i], 3)
+        add_term!(terms, exponent, cp * cq)
+    end
+    Poly(terms)
+end
+
+Base.:*(c::Integer, p::Poly) = asrat(c) * p
+Base.:*(p::Poly, c::Integer) = c * p
+Base.:*(c::Rational, p::Poly) = Poly(Dict(e => asrat(c) * v for (e, v) in p.terms))
+Base.:*(p::Poly, c::Rational) = c * p
+
+function Base.:^(p::Poly, n::Integer)
+    n < 0 && throw(ArgumentError("negative polynomial powers are not supported"))
+    result = monomial(ZERO_MONOMIAL)
+    for _ in 1:n
+        result = result * p
+    end
+    result
+end
+
+function truncate_poly(p::Poly, degree::Int)
+    Poly(Dict(e => c for (e, c) in p.terms if sum(e) <= degree))
+end
+
+constant_term(p::Poly) = get(p.terms, ZERO_MONOMIAL, zero(Rat))
+
+const ONE_POLY = monomial(ZERO_MONOMIAL)
+const B = monomial((1, 0, 0))
+const C = monomial((0, 1, 0))
+const XI = monomial((0, 0, 1))
+const A = ONE_POLY + XI
+
+function coordinate_monomials(degree::Int)
+    [monomial((i, j, degree - i - j))
+     for i in 0:degree for j in 0:(degree - i)]
+end
+
+function exponent_compositions(degree::Int)
+    [(i, j, degree - i - j)
+     for i in 0:degree for j in 0:(degree - i)]
+end
+```
+
+For the full coordinate algebra, the coproducts needed in the source
+experiment are
+
+$$
+\begin{aligned}
+\Delta(b)&=a\otimes b+b\otimes d,\\
+\Delta(c)&=c\otimes a+d\otimes c,\\
+\Delta(\xi)&=a\otimes a+b\otimes c-1\otimes1.
+\end{aligned}
+$$
+
+The formal expansion of $d$ is truncated before it enters the coproduct.
+
+```{julia}
+const TensorMonomial = Tuple{Monomial,Monomial}
+
+struct TensorPoly
+    terms::Dict{TensorMonomial,Rat}
+end
+
+TensorPoly() = TensorPoly(Dict{TensorMonomial,Rat}())
+
+tensor_product(p::Poly, q::Poly) = TensorPoly(
+    Dict((ep, eq) => cp * cq
+         for (ep, cp) in p.terms for (eq, cq) in q.terms))
+
+tensor_one() = tensor_product(ONE_POLY, ONE_POLY)
+
+function Base.:+(p::TensorPoly, q::TensorPoly)
+    terms = copy(p.terms)
+    for (e, c) in q.terms
+        value = get(terms, e, zero(Rat)) + c
+        if value == 0
+            delete!(terms, e)
+        else
+            terms[e] = value
+        end
+    end
+    TensorPoly(terms)
+end
+
+Base.:-(p::TensorPoly) = TensorPoly(Dict(e => -c for (e, c) in p.terms))
+Base.:-(p::TensorPoly, q::TensorPoly) = p + (-q)
+
+function tensor_scale(c::Rat, p::TensorPoly)
+    TensorPoly(Dict(e => c * v for (e, v) in p.terms if c * v != 0))
+end
+
+function tensor_mul(p::TensorPoly, q::TensorPoly, degree::Int)
+    terms = Dict{TensorMonomial,Rat}()
+    for ((elp, erp), cp) in p.terms, ((elq, erq), cq) in q.terms
+        left = ntuple(i -> elp[i] + elq[i], 3)
+        right = ntuple(i -> erp[i] + erq[i], 3)
+        if sum(left) <= degree && sum(right) <= degree
+            key = (left, right)
+            add_term!(terms, key, cp * cq)
+        end
+    end
+    TensorPoly(terms)
+end
+
+mutable struct PairingContext
+    degree::Int
+    delta_generators::Vector{TensorPoly}
+    delta_cache::Dict{Monomial,TensorPoly}
+    pairing_cache::Dict{Any,Rat}
+end
+
+function formal_d(degree::Int)
+    inverse_a = Poly()
+    for k in 0:degree
+        inverse_a += ((-1)^k) * (XI^k)
+    end
+    truncate_poly((ONE_POLY + B * C) * inverse_a, degree)
+end
+
+function PairingContext(degree::Int)
+    d = formal_d(degree)
+    delta_b = tensor_product(A, B) + tensor_product(B, d)
+    delta_c = tensor_product(C, A) + tensor_product(d, C)
+    delta_xi = tensor_product(A, A) + tensor_product(B, C) - tensor_one()
+    PairingContext(degree, [delta_b, delta_c, delta_xi],
+                   Dict{Monomial,TensorPoly}(), Dict{Any,Rat}())
+end
+
+function delta_monomial(ctx::PairingContext, exponent::Monomial)
+    haskey(ctx.delta_cache, exponent) && return ctx.delta_cache[exponent]
+    result = tensor_one()
+    for variable in 1:3
+        for _ in 1:exponent[variable]
+            result = tensor_mul(result, ctx.delta_generators[variable], ctx.degree)
+        end
+    end
+    ctx.delta_cache[exponent] = result
+    result
+end
+
+function delta_poly(ctx::PairingContext, p::Poly)
+    result = TensorPoly()
+    for (exponent, coefficient) in p.terms
+        result = result + tensor_scale(coefficient,
+                                       delta_monomial(ctx, exponent))
+    end
+    result
+end
+
+function base_pair(coordinate_variable::Int, enveloping_generator::Int)
+    # (b,c,xi) paired with (E,F,H), respectively.
+    (coordinate_variable == enveloping_generator) ? one(Rat) : zero(Rat)
+end
+
+function pair_monomial(ctx::PairingContext, exponent::Monomial,
+                       word::Tuple)
+    key = (exponent, word)
+    haskey(ctx.pairing_cache, key) && return ctx.pairing_cache[key]
+
+    result = if isempty(word)
+        exponent == ZERO_MONOMIAL ? one(Rat) : zero(Rat)
+    elseif length(word) == 1
+        # E,F,H are primitive.  Since b,c,xi all have zero counit, a
+        # coordinate monomial of degree > 1 pairs trivially with one generator.
+        total_degree = sum(exponent)
+        if total_degree == 0
+            zero(Rat)
+        elseif total_degree == 1
+            coordinate_variable = findfirst(>(0), exponent)
+            base_pair(coordinate_variable, word[1])
+        else
+            zero(Rat)
+        end
+    else
+        first_generator = word[1]
+        remaining_word = Tuple(word[2:end])
+        value = zero(Rat)
+        for ((left_exponent, right_exponent), coefficient) in
+            delta_monomial(ctx, exponent).terms
+            left = monomial(left_exponent)
+            right = monomial(right_exponent)
+            value += coefficient *
+                pair_poly_word(ctx, left, (first_generator,)) *
+                pair_poly_word(ctx, right, remaining_word)
+        end
+        value
+    end
+
+    ctx.pairing_cache[key] = result
+    result
+end
+
+function pair_poly_word(ctx::PairingContext, p::Poly, word::Tuple)
+    sum(coefficient * pair_monomial(ctx, exponent, word)
+        for (exponent, coefficient) in p.terms; init=zero(Rat))
+end
+```
+
+The chart relation and the generator pairing matrix agree with the MATLAB
+classes (`FSL2Full.HPGen`) at the requested truncation.
+
+```{julia}
+cutoff = 6
+ctx = PairingContext(cutoff)
+d = formal_d(cutoff)
+
+# The relation is exact modulo terms above the cutoff.
+test_relation = truncate_poly(A * d - B * C - ONE_POLY, cutoff)
+@assert isempty(test_relation.terms)
+
+# Recover the source generator pairings for a,b,c,d,xi,d-1.
+coordinate_generators = [A, B, C, d, XI, d - ONE_POLY]
+generator_pairing = [
+    pair_poly_word(ctx, f, (u,)) for f in coordinate_generators for u in 1:3
+]
+generator_pairing = reshape(generator_pairing, 3, 6)'
+
+println("generator pairing rows = [a b c d xi d-1]")
+println(generator_pairing)
+@assert generator_pairing == Rat[
+    0 0 1;
+    1 0 0;
+    0 1 0;
+    0 0 -1;
+    0 0 1;
+    0 0 -1
+]
+```
+
+# 数学的証明：有限次数 dual basis の存在と一意性
+
+## 設定
+
+$G=SL_2$ の単位元近傍の形式局所環を
+
+$$
+R=\mathbb{Q}[[b,c,\xi]],\qquad \xi=a-1,
+\qquad d=\frac{1+bc}{1+\xi}
+$$
+
+とする。$R$ の次数 filtration は
+$\mathfrak m=(b,c,\xi)$ によって定め、$R_{>N}=\mathfrak m^{N+1}$ と書く。
+古典 Hopf pairing は、生成元について
+
+$$
+\begin{array}{c|ccc}
+ & E&F&H\\ \hline
+b&1&0&0\\
+c&0&1&0\\
+\xi&0&0&1
+\end{array}
+$$
+
+とし、
+
+$$
+\langle fg,u\rangle
+=\langle f\otimes g,\Delta_U(u)\rangle,
+\qquad
+\langle f,uv\rangle
+=\langle\Delta_R(f),u\otimes v\rangle
+$$
+
+で拡張する。ここで $E,F,H$ は primitive、すなわち
+$\Delta_U(X)=X\otimes1+1\otimes X$ である。$R$ 側の coproduct は
+
+$$
+\begin{aligned}
+\Delta_R(b)&=a\otimes b+b\otimes d,\\
+\Delta_R(c)&=c\otimes a+d\otimes c,\\
+\Delta_R(\xi)&=a\otimes a+b\otimes c-1\otimes1.
+\end{aligned}
+$$
+
+これは $m_{ij}\mapsto\sum_km_{ik}\otimes m_{kj}$ と
+$\xi=a-1$ から直接従う。
+
+## 補題（各次数の pairing 行列は可逆）
+
+$R_r=\mathfrak m^r/\mathfrak m^{r+1}$ の monomial basis を
+$b^pc^q\xi^s$（$p+q+s=r$）とし、$U_r$ の PBW basis を
+$E^iF^jH^k$（$i+j+k=r$）とする。この二つの間の pairing 行列
+
+$$
+P_r=\bigl(\langle b^pc^q\xi^s,E^iF^jH^k\rangle\bigr)
+$$
+
+は可逆である。
+
+### 証明
+
+右不変ベクトル場を $R_E,R_F,R_H$ と書く。単位元での一次部分は、
+生成元 pairing の表そのものから
+
+$$
+R_E=\partial_b+O(\mathfrak m),\qquad
+R_F=\partial_c+O(\mathfrak m),\qquad
+R_H=\partial_\xi+O(\mathfrak m)
+$$
+
+となる。したがって PBW monomial $E^iF^jH^k$ が単位元で作用する
+principal part は
+
+$$
+\partial_b^i\partial_c^j\partial_\xi^k
+$$
+
+であり、同じ次数の coordinate monomial に作用させた主係数は
+$i!j!k!$ である。$O(\mathfrak m)$ の係数から来る項は filtration を
+一段以上下げるだけなので、monomial order を degree 降順に取ると
+$P_r$ は対角成分 $i!j!k!\ne0$ を持つ triangular matrix になる。
+よって $P_r$ は可逆である。∎
+
+## 命題（cutoff dual basis の存在・一意性）
+
+各 $N\ge1$ に対し、$D_E^{(N)},D_F^{(N)},D_H^{(N)}\in R/R_{>N}$ で
+
+$$
+\langle D_X^{(N)},Y\rangle=\delta_{X,Y},
+\qquad
+\langle D_X^{(N)},E^iF^jH^k\rangle=0
+$$
+
+$2\le i+j+k\le N$ を満たすものが一意に存在する。
+
+### 証明
+
+$N-1$ 次で条件を満たす $D_X^{(N-1)}$ が得られているとする。次数 $N$
+の補正を
+
+$$
+D_X^{(N)}=D_X^{(N-1)}
+ +\sum_{p+q+s=N}x^{(X)}_{p,q,s}b^pc^q\xi^s
+$$
+
+と置く。右不変微分作用素の order より、次数 $N$ の coordinate term は
+次数 $<N$ の PBW monomial との pairing に寄与しない。したがって新しい
+未知係数は次数 $N$ の条件だけに現れ、条件式は
+
+$$
+P_N\,x^{(X)}=-v^{(X)},
+$$
+
+という線形方程式になる。ここで $v^{(X)}$ は既知の
+$D_X^{(N-1)}$ の次数 $N$ PBW monomial に対する pairing 値である。
+補題により $P_N$ は可逆なので、$x^{(X)}$ は一意に決まる。次数 1 の
+初期値 $D_E^{(1)}=b,D_F^{(1)}=c,D_H^{(1)}=\xi$ から帰納すれば、
+任意の有限 cutoff に対する存在と一意性が従う。∎
+
+## 今回の係数への適用
+
+上の命題を $N=2,3,4$ に適用し、coproduct を展開すると、先頭の結論に
+掲げた係数が得られる。例えば degree 2 の未知補正を
+
+$$
+\begin{aligned}
+D_E^{(2)}&=b+\sum_{p+q+s=2}x^{(E)}_{p,q,s}b^pc^q\xi^s,\\
+D_F^{(2)}&=c+\sum_{p+q+s=2}x^{(F)}_{p,q,s}b^pc^q\xi^s,\\
+D_H^{(2)}&=\xi+\sum_{p+q+s=2}x^{(H)}_{p,q,s}b^pc^q\xi^s
+\end{aligned}
+$$
+
+と置くと、$P_2x^{(X)}=-v^{(X)}$ の解はそれぞれ
+
+$$
+\begin{aligned}
+x^{(E)}&=b\xi,\\
+x^{(F)}&=-c\xi,\\
+x^{(H)}&=-bc-\frac12\xi^2.
+\end{aligned}
+$$
+
+degree 2 の cancellation は、例えば次の four pairings によって見える。
+
+$$
+\begin{array}{c|cc}
+\text{condition}&\text{old term}&\text{new term}\\ \hline
+\langle\,\cdot\,,EH\rangle\text{ for }D_E
+    &\langle b,EH\rangle=-1&\langle b\xi,EH\rangle=1\\
+\langle\,\cdot\,,FH\rangle\text{ for }D_F
+    &\langle c,FH\rangle=1&\langle c\xi,FH\rangle=1\\
+\langle\,\cdot\,,EF\rangle\text{ for }D_H
+    &\langle\xi,EF\rangle=1&\langle bc,EF\rangle=1\\
+\langle\,\cdot\,,H^2\rangle\text{ for }D_H
+    &\langle\xi,H^2\rangle=1&\langle\xi^2,H^2\rangle=2
+\end{array}
+$$
+
+従って $b+b\xi$、$c-c\xi$、
+$\xi-bc-\frac12\xi^2$ でそれぞれの defect が消える。他の degree 2
+PBW monomial に対する defect は同じ coproduct recursion で 0 になり、
+degree 3, 4 ではこの手続きを各次数の全 monomial に対して繰り返す。
+
+degree 3, 4 でも同じ一意決定を繰り返す。QMD の
+`solve_exact` はこの $P_Nx=-v$ を有理数上で実行しており、最後の
+`@assert` は各 $N\le\texttt{cutoff}$ の pairing 条件を全 PBW monomial について確認する。
+
+この有限次数の帰納法は、以下の閉形式を次数ごとに復元する計算法として
+理解できる。
+
+## 命題（一般 PBW dual basis の閉形式）
+
+形式座標
+
+$$
+ x=\frac bd,\qquad y=cd,\qquad z=-\log d
+$$
+
+を置く。このとき、任意の $i,j,k\ge0$ に対し
+
+$$
+\boxed{
+\bigl(E^iF^jH^k\bigr)^\vee
+=\frac{x^iy^jz^k}{i!j!k!}
+=\frac1{i!j!k!}
+\left(\frac bd\right)^i(cd)^j(-\log d)^k
+}
+$$
+
+である。
+
+### 証明
+
+単位元近傍では $d$ は可逆なので、$(x,y,z)$ を形式局所座標として
+使える。逆変換は
+
+$$
+ d=e^{-z},\qquad b=xe^{-z},\qquad c=ye^z,
+\qquad a=(1+xy)e^z
+$$
+
+である。$g=\begin{pmatrix}a&b\\c&d\end{pmatrix}$ に右から
+$\exp(tE),\exp(tF),\exp(tH)$ を掛けて微分すると、右不変ベクトル場は
+
+$$
+\begin{aligned}
+R_E&=e^{2z}\bigl(\partial_x+y^2\partial_y-y\partial_z\bigr),\\
+R_F&=e^{-2z}\partial_y,\\
+R_H&=\partial_z.
+\end{aligned}
+$$
+
+Pairing の定義より
+
+$$
+\langle f,E^iF^jH^k\rangle
+=\bigl(R_E^iR_F^jR_H^k f\bigr)(0,0,0).
+$$
+
+ここで右辺の作用は右端の $R_H^k$ から始まる。まず $R_H^k$
+は $z^r$ を $r!/(r-k)!\,z^{r-k}$ に写す。次に $R_F^j$ は
+$y^q$ を $q!/(q-j)!\,y^{q-j}$ に写す。最後に $R_E$ のうち
+$\partial_x$ 以外の項は必ず $y$ 因子を作るため、単位元での値に
+寄与しない。従って $x^py^qz^r$ に対しては
+
+$$
+\bigl(R_E^iR_F^jR_H^k x^py^qz^r\bigr)(0,0,0)
+=p!q!r!\,\delta_{i,p}\delta_{j,q}\delta_{k,r}.
+$$
+
+よって $x^iy^jz^k/(i!j!k!)$ は PBW monomial
+$E^iF^jH^k$ に 1 を与え、他の PBW monomial に 0 を与える。PBW 定理
+によりこれらが全 basis を成すので、表示された式が dual basis である。∎
+
+この命題の $i,j,k$ を 1 つずつ選べば、生成元の dual
+$E^\vee=x,F^\vee=y,H^\vee=z$ が得られる。一般の dual basis は、
+まさにその積を $i!j!k!$ で割ったものになっている。
+
+# Degree-by-degree dual-basis construction
+
+The source `.mlx` solves a symbolic system for each degree.  Here the same
+system is triangularized explicitly.  At degree $r$, the unknown correction
+has one coefficient for each degree-$r$ monomial in $(b,c,\xi)$, and the
+conditions are its pairings with all degree-$r$ PBW monomials
+$E^iF^jH^k$.
+
+```{julia}
+function enveloping_word(exponent::Monomial)
+    i, j, k = exponent
+    Tuple(vcat(fill(1, i), fill(2, j), fill(3, k)))
+end
+
+enveloping_words(degree::Int) =
+    [enveloping_word(e) for e in exponent_compositions(degree)]
+
+function solve_exact(A::Matrix{Rat}, rhs::Vector{Rat})
+    n, m = size(A)
+    n == m || throw(DimensionMismatch("expected a square exact system"))
+    augmented = hcat(copy(A), reshape(copy(rhs), n, 1))
+
+    for column in 1:n
+        pivot = findfirst(row -> augmented[row, column] != 0, column:n)
+        pivot === nothing && error("singular exact system at column $column")
+        pivot += column - 1
+        if pivot != column
+            augmented[[column, pivot], :] = augmented[[pivot, column], :]
+        end
+        augmented[column, :] ./= augmented[column, column]
+        for row in 1:n
+            row == column && continue
+            factor = augmented[row, column]
+            factor == 0 && continue
+            augmented[row, :] .-= factor .* augmented[column, :]
+        end
+    end
+    augmented[:, n + 1]
+end
+
+function add_correction(previous::Poly, monomials::Vector{Poly},
+                        coefficients::Vector{Rat})
+    correction = Poly()
+    for (coefficient, monomial_term) in zip(coefficients, monomials)
+        correction += coefficient * monomial_term
+    end
+    previous + correction
+end
+
+function solve_next_degree(ctx::PairingContext, previous::Vector{Poly},
+                           degree::Int)
+    coordinate_basis = coordinate_monomials(degree)
+    enveloping_basis = enveloping_words(degree)
+    matrix = Rat[
+        pair_poly_word(ctx, coordinate_basis[column], enveloping_basis[row])
+        for row in eachindex(enveloping_basis), column in eachindex(coordinate_basis)
+    ]
+
+    @assert size(matrix) == (length(enveloping_basis), length(coordinate_basis))
+    @assert size(matrix, 1) == size(matrix, 2)
+
+    next_duals = Poly[]
+    for target in previous
+        rhs = Rat[-pair_poly_word(ctx, target, word)
+                  for word in enveloping_basis]
+        coefficients = solve_exact(matrix, rhs)
+        push!(next_duals, add_correction(target, coordinate_basis, coefficients))
+    end
+    next_duals
+end
+
+function format_rational(value::Rat)
+    value == 0 && return "0"
+    denominator(value) == 1 ? string(numerator(value)) :
+        string(numerator(value), "/", denominator(value))
+end
+
+function coordinate_factor(exponent::Monomial)
+    names = ("b", "c", "\\xi")
+    factors = String[]
+    for (name, power) in zip(names, exponent)
+        power == 0 && continue
+        push!(factors, power == 1 ? name : "$name^{$power}")
+    end
+    isempty(factors) ? "1" : join(factors, " ")
+end
+
+function format_poly(p::Poly)
+    entries = collect(p.terms)
+    sort!(entries; by = x -> (sum(x[1]), x[1]))
+    isempty(entries) && return "0"
+    chunks = String[]
+    for (exponent, coefficient) in entries
+        sign = coefficient < 0 ? "-" : "+"
+        magnitude = abs(coefficient)
+        factor = coordinate_factor(exponent)
+        body = magnitude == 1 && factor != "1" ? factor :
+            (factor == "1" ? format_rational(magnitude) :
+             "$(format_rational(magnitude)) $factor")
+        if isempty(chunks)
+            push!(chunks, coefficient < 0 ? "-$body" : body)
+        else
+            push!(chunks, "$sign $body")
+        end
+    end
+    join(chunks, " ")
+end
+
+base_duals = [B, C, XI]
+duals_by_degree = Dict{Int,Vector{Poly}}(1 => base_duals)
+for degree in 2:cutoff
+    duals_by_degree[degree] = solve_next_degree(ctx, duals_by_degree[degree - 1], degree)
+end
+
+for degree in 1:cutoff
+    println("degree $degree")
+    for (label, dual) in zip(("E", "F", "H"), duals_by_degree[degree])
+        println("  $label^vee = $(format_poly(dual))")
+    end
+end
+```
+
+The first two nontrivial degrees reproduce the source experiment:
+
+```{julia}
+expected_degree_2 = [
+    B + B * XI,
+    C - C * XI,
+    XI - B * C - (1 // 2) * (XI^2),
+]
+
+expected_degree_3 = [
+    B + B * XI - (B^2) * C,
+    C - C * XI + B * (C^2) + C * (XI^2),
+    XI - B * C - (1 // 2) * (XI^2) + (1 // 3) * (XI^3),
+]
+
+@assert duals_by_degree[2] == expected_degree_2
+@assert duals_by_degree[3] == expected_degree_3
+
+println("degree-2 and degree-3 formulas match the saved MATLAB result")
+```
+
+The closed formula can also be expanded directly and compared with the
+degree-by-degree solver.  The next cell performs that comparison through the
+current cutoff and then checks the full PBW duality table in the same finite
+jet.
+
+```{julia}
+function closed_form_generators(degree::Int)
+    inverse_eta = Poly()
+    inverse_a = Poly()
+    for k in 0:degree
+        inverse_eta += (-1)^k * ((B * C)^k)
+        inverse_a += (-1)^k * (XI^k)
+    end
+
+    x = truncate_poly(B * A * inverse_eta, degree)
+    y = truncate_poly(C * (ONE_POLY + B * C) * inverse_a, degree)
+
+    z = Poly()
+    for k in 1:degree
+        coefficient = asrat((-1)^(k + 1)) / asrat(k)
+        z += coefficient * (XI^k - (B * C)^k)
+    end
+    [x, y, truncate_poly(z, degree)]
+end
+
+for degree in 1:cutoff
+    @assert duals_by_degree[degree] == closed_form_generators(degree)
+end
+println("closed generator formula matches through degree $cutoff")
+
+function closed_basis_element(exponent::Monomial, degree::Int)
+    i, j, k = exponent
+    x, y, z = closed_form_generators(degree)
+    scale = one(Rat) /
+        (asrat(factorial(i)) * asrat(factorial(j)) * asrat(factorial(k)))
+    truncate_poly(scale * (x^i) * (y^j) * (z^k), degree)
+end
+
+all_exponents = [exponent for degree in 0:cutoff
+                 for exponent in exponent_compositions(degree)]
+all_words = [enveloping_word(exponent) for exponent in all_exponents]
+
+for (target_exponent, target_element) in
+    zip(all_exponents, [closed_basis_element(e, cutoff) for e in all_exponents])
+    for (source_exponent, source_word) in zip(all_exponents, all_words)
+        value = pair_poly_word(ctx, target_element, source_word)
+        expected = target_exponent == source_exponent ? one(Rat) : zero(Rat)
+        @assert value == expected
+    end
+end
+println("full PBW duality table verified through degree $cutoff")
+```
+
+# Verification at the finite scope
+
+The following checks are the executable finite-jet certificate for the closed
+formula proved above.  They verify the exact rational identities through the
+stated cutoff.
+
+```{julia}
+function check_duality(ctx::PairingContext, duals::Vector{Poly},
+                       cutoff_degree::Int)
+    # Linear normalization and cross-pairing.
+    linear_words = [(1,), (2,), (3,)]
+    linear_matrix = Rat[
+        pair_poly_word(ctx, duals[row], linear_words[column])
+        for row in 1:3, column in 1:3
+    ]
+    @assert linear_matrix == Matrix{Rat}(I, 3, 3)
+
+    residual_counts = Dict{Int,Int}()
+    for degree in 2:cutoff_degree
+        words = enveloping_words(degree)
+        residuals = [pair_poly_word(ctx, dual, word)
+                     for dual in duals for word in words]
+        residual_counts[degree] = count(!iszero, residuals)
+        @assert all(iszero, residuals)
+    end
+    (linear_matrix=linear_matrix,
+     residual_counts=[residual_counts[degree] for degree in 2:cutoff_degree])
+end
+
+verification = Dict{Int,Any}()
+for degree in 1:cutoff
+    verification[degree] = check_duality(ctx, duals_by_degree[degree], degree)
+end
+
+println("verified cutoffs = ", sort(collect(keys(verification))))
+for degree in 1:cutoff
+    println("  degree $degree: ", verification[degree])
+end
+```
+
+# Interpretation and boundary
+
+At the exact finite scope `cutoff = 6`, the Julia port verifies:
+
+- the full `SL2` coordinate chart relation $ad-bc=1$ modulo discarded terms;
+- the source generator pairing matrix;
+- the degree-2 and degree-3 formulas saved in `sl2_dualbasis.mlx`;
+- the closed generator formula through degree 6;
+- the full PBW duality table through degree 6.
+
+The right-invariant-vector-field argument above proves the closed formula in
+the completed classical coordinate ring.  The QMD execution is the exact
+finite-jet certificate through cutoff 6.  This remains the classical
+$q=1$ calculation; the quantum ($q\ne1$) version requires replacing the
+primitive coproducts and the classical coordinate coproduct by fixed
+$U_q(sl_2)$ and $O_q(SL_2)$ conventions.
