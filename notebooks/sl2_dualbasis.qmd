@@ -430,17 +430,17 @@ $$
 =\langle f\otimes g,\Delta_U(u)\rangle,
 \qquad
 \langle f,uv\rangle
-=\langle\Delta_R(f),u\otimes v\rangle
+=\langle\Delta_O(f),u\otimes v\rangle
 $$
 
 で拡張する。ここで $E,F,H$ は primitive、すなわち
-$\Delta_U(X)=X\otimes1+1\otimes X$ である。$R$ 側の coproduct は
+$\Delta_U(X)=X\otimes1+1\otimes X$ である。座標環側の coproduct は
 
 $$
 \begin{aligned}
-\Delta_R(b)&=a\otimes b+b\otimes d,\\
-\Delta_R(c)&=c\otimes a+d\otimes c,\\
-\Delta_R(\xi)&=a\otimes a+b\otimes c-1\otimes1.
+\Delta_O(b)&=a\otimes b+b\otimes d,\\
+\Delta_O(c)&=c\otimes a+d\otimes c,\\
+\Delta_O(\xi)&=a\otimes a+b\otimes c-1\otimes1.
 \end{aligned}
 $$
 

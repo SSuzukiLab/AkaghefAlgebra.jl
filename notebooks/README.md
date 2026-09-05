@@ -21,6 +21,9 @@ VSCode Julia 拡張の `##` cell ナビゲーションで 1 セルずつ回せ�
 
 ## Executable QMD experiments
 
+Local notation rules for these notebooks are defined in
+[NOTATION.md](NOTATION.md).
+
 | ファイル | 内容 |
 |---|---|
 | [sl2_dualbasis.qmd](sl2_dualbasis.qmd) | 全体 $O(SL_2)$ の dual basis を古典 $q=1$ で一般式（degree 6 まで展開検証）として扱う |

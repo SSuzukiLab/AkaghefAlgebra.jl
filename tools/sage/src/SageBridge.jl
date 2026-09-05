@@ -17,6 +17,7 @@ module SageBridge
 
 using HTTP
 using JSON
+using Random
 
 export SageSession, connect!, ensure_server!, health, exec!, eval!,
        sage_version, shutdown!, default_port, default_base_url,
@@ -81,14 +82,19 @@ mutable struct SageSession
     port::Int
     timeout_s::Float64
     transport::Symbol  # :wsl_file | :wsl_oneshot | :direct
+    auth_token::String
 end
 
-function SageSession(; host=DEFAULT_HOST, port=DEFAULT_PORT, timeout_s=180.0, transport::Symbol=:auto)
+function SageSession(; host=DEFAULT_HOST, port=DEFAULT_PORT, timeout_s=180.0, transport::Symbol=:auto,
+                     auth_token::Union{Nothing,AbstractString}=nothing)
     1 <= port <= 65535 || throw(ArgumentError("port must be in 1:65535"))
     host in ("127.0.0.1", "localhost") ||
         throw(ArgumentError("SageSession host must be loopback"))
     tr = transport === :auto ? (Sys.iswindows() ? :wsl_file : :direct) : transport
-    return SageSession(default_base_url(; host, port), String(host), Int(port), Float64(timeout_s), tr)
+    token = auth_token === nothing ? bytes2hex(rand(RandomDevice(), UInt8, 32)) : String(auth_token)
+    occursin(r"^[0-9a-f]{64}$", token) ||
+        throw(ArgumentError("SageSession auth_token must be 64 lowercase hexadecimal characters"))
+    return SageSession(default_base_url(; host, port), String(host), Int(port), Float64(timeout_s), tr, token)
 end
 
 struct BridgeResponse
@@ -98,10 +104,12 @@ end
 
 function _request_direct(sess::SageSession, method::Symbol, path::AbstractString; body::Union{Nothing,String}=nothing)
     url = sess.base_url * path
+    headers = ["Authorization" => "Bearer $(sess.auth_token)"]
     resp = if method === :GET
-        HTTP.get(url; readtimeout=sess.timeout_s, connect_timeout=3, status_exception=false)
+        HTTP.get(url, headers; readtimeout=sess.timeout_s, connect_timeout=3, status_exception=false)
     else
-        HTTP.post(url, ["Content-Type" => "application/json"], body === nothing ? "{}" : body;
+        push!(headers, "Content-Type" => "application/json")
+        HTTP.post(url, headers, body === nothing ? "{}" : body;
                   readtimeout=sess.timeout_s, connect_timeout=3, status_exception=false)
     end
     return BridgeResponse(Int(resp.status), String(resp.body))
@@ -110,8 +118,9 @@ end
 function _request_wsl_file(sess::SageSession, method::Symbol, path::AbstractString; body::Union{Nothing,String}=nothing)
     url = "http://127.0.0.1:$(sess.port)$(path)"
     timeout = string(Int(ceil(sess.timeout_s)))
+    auth_header = "-H 'Authorization: Bearer $(sess.auth_token)' "
     if method === :GET
-        inner = "curl -sS -m $timeout -w '\\n%{http_code}' '$url'"
+        inner = "curl -sS -m $timeout -w '\\n%{http_code}' $auth_header'$url'"
         cap = wsl_bash_capture(inner; timeout_s=sess.timeout_s)
     else
         payload = body === nothing ? "{}" : body
@@ -122,6 +131,7 @@ function _request_wsl_file(sess::SageSession, method::Symbol, path::AbstractStri
             inner = string(
                 "curl -sS -m ", timeout,
                 " -w '\\n%{http_code}' ",
+                auth_header,
                 "-H 'Content-Type: application/json' ",
                 "-d @'", wsl_req, "' ",
                 "'", url, "'",
@@ -257,7 +267,8 @@ function ensure_server!(sess::SageSession; force_restart::Bool=false)
         "mkdir -p \"\$HOME/bin\"; ",
         "cp '", wsl_launcher, "' \"\$HOME/bin/start_sage_session.sh\"; ",
         "chmod +x \"\$HOME/bin/start_sage_session.sh\"; ",
-        "\"\$HOME/bin/start_sage_session.sh\" ", string(sess.port), " '", wsl_server, "'",
+        "\"\$HOME/bin/start_sage_session.sh\" ", string(sess.port), " '", wsl_server,
+        "' ", sess.auth_token,
     )
     cap = wsl_bash_capture(inner; timeout_s=180)
     println(strip(cap.stdout))

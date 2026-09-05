@@ -33,8 +33,11 @@ Notes:
 - The server launcher receives the repository's resolved server-script path from
   `SageBridge`; it does not assume a particular Windows username or checkout path.
 - The server is deliberately bound to loopback only. Its `/exec` endpoint executes
-  arbitrary Sage/Python code and has no authentication; do not expose it to a LAN
-  or change the bind address.
+  arbitrary Sage/Python code, so every request must carry a per-launch bearer token
+  (a 256-bit random hex string minted by `SageSession` and passed to the launcher and
+  server). Requests with a missing/invalid token, a cross-origin `Origin`/`Sec-Fetch`
+  header, a non-loopback `Host`, or a non-JSON body are rejected. Do not expose it to a
+  LAN or change the bind address.
 - Fallback `:wsl_oneshot` runs `sage -python` per call if the daemon is down.
 
 ## Quick verify
@@ -42,7 +45,8 @@ Notes:
 ```sh
 # from lib/algebra.jl
 julia --project=tools/sage -e 'using Pkg; Pkg.instantiate()'
-julia --project=tools/sage tools/sage/scripts/verify_groups.jl
+julia --project=tools/sage --compiled-modules=existing tools/sage/scripts/verify_security.jl
+julia --project=tools/sage --compiled-modules=existing tools/sage/scripts/verify_groups.jl
 ```
 
 Latest machine record: `artifacts/verify_groups_result.json`.

@@ -1,7 +1,7 @@
 ---
 title: 'The R-convention dual PBW basis of O_q(SL_2)'
 author: 'Akaghef'
-date: '2026-08-26'
+date: '2026-08-27'
 engine: julia
 format:
   html:
@@ -15,9 +15,9 @@ execute:
 $q=e^\hbar$ とし、R派の余積と量子行列式
 
 $$
-\Delta_R(E)=1\otimes E+E\otimes K,
+\Delta(E)=1\otimes E+E\otimes K,
 \qquad
-\Delta_R(F)=F\otimes1+K^{-1}\otimes F,
+\Delta(F)=F\otimes1+K^{-1}\otimes F,
 \qquad
 ad-q^{-1}bc=1
 $$
@@ -32,7 +32,7 @@ $$
 
 $$
 \boxed{
-\bigl(E^iF^jH^k\bigr)_{q,R}^\vee
+\bigl(E^iF^jH^k\bigr)_q^\vee
 =
 \frac{q^{2ij-\binom{i+1}{2}-\binom{j}{2}}}
 {[i]_q!\,[j]_q!\,k!}
@@ -43,19 +43,9 @@ $$
 特に
 
 $$
-E_{q,R}^\vee=q^{-1}bd^{-1},\qquad
-F_{q,R}^\vee=cd,\qquad
-H_{q,R}^\vee=-\log d.
-$$
-
-また、$\eta=bc$ と書けば、ordered normal form で
-
-$$
-\boxed{
--\log d
-=\log a+
-\sum_{n\ge1}(-1)^n\frac{\hbar}{\sinh(n\hbar)}\eta^n.
-}
+E_q^\vee=q^{-1}bd^{-1},\qquad
+F_q^\vee=cd,\qquad
+H_q^\vee=-\log d.
 $$
 
 以下では、最初にこの主張を純粋に代数的に証明し、その後に
@@ -66,18 +56,18 @@ q-difference 計算と低次数の独立検証を与える。
 この QMD の coproduct label は **R派（K-right）** と固定する。すなわち
 
 $$
-\Delta_R(E)=1\otimes E+E\otimes K,
+\Delta(E)=1\otimes E+E\otimes K,
 \qquad
-\Delta_R(F)=F\otimes1+K^{-1}\otimes F.
+\Delta(F)=F\otimes1+K^{-1}\otimes F.
 $$
 
 対して、既存 MATLAB `Examples/StrAlgebra/StrUqsl2.m` は
 **L派（K-left）**：
 
 $$
-\Delta_L(E)=E\otimes1+K\otimes E,
+\Delta^{\mathrm L}(E)=E\otimes1+K\otimes E,
 \qquad
-\Delta_L(F)=F\otimes K^{-1}+1\otimes F.
+\Delta^{\mathrm L}(F)=F\otimes K^{-1}+1\otimes F.
 $$
 
 R派とL派の結果は、明示的な変換なしに同一視しない。
@@ -136,6 +126,40 @@ the noncommutative coordinate algebra.
 
 ## 1.2. q-number、PBW basis、pairing
 
+標数 $0$ の体 $\Bbbk$ に対し
+
+$$
+R=\Bbbk[[\hbar]],\qquad q=e^\hbar
+$$
+
+とする。$U_\hbar(\mathfrak{sl}_2)$ は
+
+$$
+[H,E]=2E,\qquad [H,F]=-2F,
+$$
+
+$$
+[E,F]=\frac{K-K^{-1}}{q-q^{-1}},
+\qquad K=e^{\hbar H},
+$$
+
+および
+
+$$
+\Delta(E)=1\otimes E+E\otimes K,
+$$
+
+$$
+\Delta(F)=F\otimes1+K^{-1}\otimes F,
+$$
+
+$$
+\Delta(H)=H\otimes1+1\otimes H,
+\qquad \Delta(K)=K\otimes K
+$$
+
+を持つものとする。
+
 対称 q-number と q-factorial を
 
 $$
@@ -153,7 +177,15 @@ KF=q^{-2}FK
 $$
 
 とし、PBW 順序を $E^iF^jH^k$ に固定する。座標環との pairing は基本表現
-$\pi(K)=\operatorname{diag}(q,q^{-1})$ の行列係数
+$\pi(K)=\operatorname{diag}(q,q^{-1})$、
+
+$$
+\pi(E)=\begin{pmatrix}0&1\\0&0\end{pmatrix},\qquad
+\pi(F)=\begin{pmatrix}0&0\\1&0\end{pmatrix},\qquad
+\pi(H)=\begin{pmatrix}1&0\\0&-1\end{pmatrix}
+$$
+
+の行列係数
 
 $$
 \langle t_{rs},u\rangle=\pi(u)_{rs}
@@ -163,95 +195,13 @@ $$
 
 # 2. 数学的証明
 
-## 2.1. 非可換対数 $H_q^\vee=-\log d$
+この節は、GPT Pro が与えた修正版の代数的証明を、結論だけでなく
+coregular action、二つの帰納法、Cartan shift、BCH 計算まで含めて記録する。
+証拠状態は `proved/agent`（owner 未確認）である。
 
-We first prove the Cartan-coordinate identity
+## 2.1. Quantum Gauss 座標と位相的 PBW basis
 
-$$
-H_q^\vee=-\log d.
-$$
-
-This logarithm is well-defined in the $(d-1)$-adic completion as the single
-noncommutative series
-
-$$
--\log d=\sum_{n\ge1}\frac{(1-d)^n}{n}.
-$$
-
-The difficulty is not defining this series, but rewriting it in the local
-coordinates $(a,b,c)$.  The q-determinant gives
-
-$$
-d=a^{-1}(1+q^{-1}bc)=(1+qbc)a^{-1}.
-$$
-
-Since
-
-$$
-a(bc)=q^{-2}(bc)a,
-$$
-
-the factors $a^{-1}$ and $1+q^{-1}bc$ do not commute.  Therefore the classical
-identity
-
-$$
--\log d=\log a-\log(1+bc)
-$$
-
-cannot be imported directly.  Any proof must use a BCH/q-commuting logarithm
-calculation. Equivalently, $\operatorname{ad}_{\log a}$ acts diagonally on
-$(bc)^n$, so a Bernoulli/BCH operator can be applied termwise.
-
-In fact, the ordered logarithm itself can be evaluated. Put $\eta=bc$ and
-$q=e^\hbar$. Then
-
-$$
-[\log a,\eta^n]=-2n\hbar\,\eta^n.
-$$
-
-Write
-
-$$
-d=e^{-\log a}\exp\bigl(\log(1+e^{-\hbar}\eta)\bigr).
-$$
-
-The powers of $\eta$ form an abelian ideal on which
-$\operatorname{ad}_{-\log a}$ acts diagonally. Therefore the BCH identity
-
-$$
-\log(e^A e^B)
-=A+\frac{\operatorname{ad}_A}{1-e^{-\operatorname{ad}_A}}B
-$$
-
-applies termwise, and gives the ordered formula
-
-$$
-\boxed{
--\log d
-=\log a+
-\sum_{n\ge1}(-1)^n
-\frac{\hbar}{\sinh(n\hbar)}(bc)^n.
-}
-$$
-
-Therefore $H_q^\vee=-\log d$ has the expansion
-
-$$
-H_q^\vee
-=\log a+
-\left(-1+\frac{\hbar^2}{6}+O(\hbar^4)\right)bc
-+\left(\frac12-\frac{\hbar^2}{3}+O(\hbar^4)\right)(bc)^2
-+\cdots.
-$$
-
-These coefficients agree with the independent hbar-truncated step-up
-calculation. Mixed $bc\,\xi^r$ terms seen in the commutative realization should
-therefore be interpreted as contributions of the unresolved star/PBW
-identification, not as terms in this ordered $O_q(SL_2)$ normal form.
-
-## 2.2. Quantum Gauss 座標と位相的 PBW basis
-
-$d$ を可逆化し、
+$d$ を可逆化し、augmentation ideal で完備化した座標環 $\widehat A$ で
 
 $$
 x=bd^{-1},\qquad y=cd,\qquad z=-\log d
@@ -263,52 +213,52 @@ $$
 dx=qxd,\qquad dy=qyd,
 $$
 
-$$
-xy=q^{-1}bc,
-\qquad
-yx=qbc,
-\qquad
-xy=q^{-2}yx.
-$$
-
-$d=e^{-z}$ なので
+および
 
 $$
-[z,x]=-\hbar x,
-\qquad
-[z,y]=-\hbar y.
+xy=q^{-1}bc,\qquad yx=qbc,
+\qquad \boxed{xy=q^{-2}yx}
 $$
 
-逆に
+を得る。$d=e^{-z}$ なので最初の二式は
 
 $$
-d=e^{-z},\qquad b=xe^{-z},\qquad c=ye^z,
+[z,x]=-\hbar x,\qquad [z,y]=-\hbar y
 $$
 
-かつ $bc=qxy$ と量子行列式から
+と同値である。逆に
+
+$$
+d=e^{-z},\qquad b=xe^{-z},\qquad c=ye^z.
+$$
+
+さらに $bc=qxy$ と $ad-q^{-1}bc=1$ から
 
 $$
 a=(1+xy)e^z.
 $$
 
 従って $(a,b,c,d)$ と $(x,y,z)$ は完備化後に相互に復元できる。
-これらは iterated Ore extension の関係式を満たすため、
+$xy=q^{-2}yx$、$zx=xz-\hbar x$、$zy=yz-\hbar y$ は iterated Ore
+extension の関係式であるから、ordered monomial
 
 $$
-\{x^iy^jz^k\}_{i,j,k\ge0}
+\boxed{\{x^iy^jz^k\}_{i,j,k\ge0}}
 $$
 
-は位相的 PBW basis である。
+は $\widehat A$ の位相的 PBW basis をなす。したがって、以下でこの族が
+$\{E^iF^jH^k\}$ と Kronecker pairing を持つことを示せば dual basis の
+完全性も従う。
 
-## 2.3. Coregular action
+## 2.2. 右 coregular action と twisted Leibniz 則
 
-$u\in U_\hbar(\mathfrak{sl}_2)$ に対し
+$u\in U_\hbar(\mathfrak{sl}_2)$ に対して
 
 $$
 \partial_u(f)=f_{(1)}\langle f_{(2)},u\rangle
 $$
 
-と定める。すると
+と定める。Hopf pairing の両立性から
 
 $$
 \partial_{uv}=\partial_u\partial_v,
@@ -316,7 +266,20 @@ $$
 \langle f,u\rangle=\varepsilon(\partial_u f).
 $$
 
-行列係数の余積から
+実際、余積の余結合性を使えば
+
+$$
+\partial_u(\partial_v f)
+=f_{(1)}\langle f_{(2)},u\rangle\langle f_{(3)},v\rangle
+=f_{(1)}\langle f_{(2)},uv\rangle
+=\partial_{uv}(f),
+$$
+
+また counit を適用すれば
+$\varepsilon(\partial_u f)=\langle f,u\rangle$ である。
+
+行列係数の余積
+$\Delta(t_{rs})=\sum_m t_{rm}\otimes t_{ms}$ と基本表現から直接、
 
 $$
 \begin{array}{c|cccc}
@@ -328,81 +291,183 @@ $$
 \end{array}
 $$
 
-を得る。R派の余積により積に対する作用は
+を得る。さらに $\langle fg,u\rangle
+=\langle f\otimes g,\Delta(u)\rangle$ と、この notebook で固定した余積から
 
 $$
-\partial_E(fg)=f\partial_E(g)+\partial_E(f)\partial_K(g),
+\boxed{\partial_E(fg)
+=f\partial_E(g)+\partial_E(f)\partial_K(g)},
 $$
 
 $$
-\partial_F(fg)=\partial_F(f)g+\partial_{K^{-1}}(f)\partial_F(g),
+\boxed{\partial_F(fg)
+=\partial_F(f)g+\partial_{K^{-1}}(f)\partial_F(g)},
 $$
 
 $$
-\partial_H(fg)=\partial_H(f)g+f\partial_H(g).
+\boxed{\partial_H(fg)=\partial_H(f)g+f\partial_H(g)}.
 $$
 
-Gauss 座標上では
+これが以下で使う twisted Leibniz 則である。
+
+### 2.2.1. $K$ と $H$ の作用
+
+$K$ は group-like なので $\partial_K$ は代数自己同型である。上の表から
 
 $$
-\partial_K(x)=x,
-\quad
-\partial_K(y)=y,
-\quad
-\partial_K(z)=z+\hbar,
+\partial_K(d^{-1})=q d^{-1},
 $$
+
+ゆえに
+
+$$
+\partial_K(x)=(q^{-1}b)(qd^{-1})=x,
+\qquad
+\partial_K(y)=(qc)(q^{-1}d)=y.
+$$
+
+また
+
+$$
+\partial_K(z)
+=-\log(\partial_K(d))
+=-\log(q^{-1}d)=z+\hbar.
+$$
+
+従って任意の一変数形式級数 $p$ に対して
+
+$$
+\boxed{\partial_K(p(z))=p(z+\hbar)}.
+$$
+
+$H$ は primitive であり、表から
 
 $$
 \partial_H(x)=\partial_H(y)=0,
 \qquad
-\partial_H(z)=1,
+\partial_H(z)=1.
 $$
 
-$$
-\partial_F(x)=\partial_F(z)=0,
-\qquad
-\partial_F(y)=d^2,
-$$
+従って
 
 $$
-\partial_E(x)=qd^{-2},
-\qquad
-\partial_E(y)=q^{-1}y^2d^{-2},
-\qquad
-\partial_E(z)\in(y).
+\boxed{\partial_H^t\bigl(x^iy^jp(z)\bigr)
+=x^iy^jp^{(t)}(z)}.
 $$
 
-最後の3式では、逆元への作用
+### 2.2.2. $F$ の作用
+
+$\partial_F(d)=0$ なので $\partial_F(d^{-1})=0$、従って
+$\partial_F(x)=\partial_F(z)=0$ である。一方、twisted Leibniz 則から
 
 $$
-\partial_E(d^{-1})=-q\,d^{-1}cd^{-1}
+\partial_F(y)=\partial_F(cd)
+=\partial_F(c)d+\partial_{K^{-1}}(c)\partial_F(d)=d^2.
 $$
 
-と量子行列式を使った。
-
-## 2.4. Master pairing formula
-
-まず $d^2y=q^2yd^2$ と q-Leibniz 則から帰納的に
+したがって
 
 $$
-\partial_F(y^j)=q^{j-1}[j]_q\,y^{j-1}d^2
+\boxed{\partial_F(x)=\partial_F(z)=0,
+\qquad \partial_F(y)=d^2}.
 $$
 
-を得る。従って
+### 2.2.3. $E$ の作用
+
+$0=\partial_E(dd^{-1})$ と $\partial_K(d^{-1})=qd^{-1}$ から
 
 $$
-\partial_F^j(y^j)=q^{\binom j2}[j]_q!\,d^{2j},
+0=d\partial_E(d^{-1})+cqd^{-1},
 $$
+
+従って
+
+$$
+\boxed{\partial_E(d^{-1})=-q\,d^{-1}cd^{-1}}.
+$$
+
+これを $x=bd^{-1}$ に適用すると
+
+$$
+\begin{aligned}
+\partial_E(x)
+&=b\partial_E(d^{-1})+a\partial_K(d^{-1})\\
+&=q\bigl(a-bd^{-1}c\bigr)d^{-1}.
+\end{aligned}
+$$
+
+量子行列式を $d$ の局所化で解けば
+$a-bd^{-1}c=d^{-1}$ であるから
+
+$$
+\boxed{\partial_E(x)=qd^{-2}}.
+$$
+
+また
+
+$$
+\partial_E(y)=\partial_E(cd)=c^2
+=q^{-1}y^2d^{-2}.
+$$
+
+$\partial_E(d)=c=yd^{-1}$ なので、形式対数の各項へ twisted Leibniz 則を
+適用すると $\partial_E(z)$ の全項は左因子 $y$ を持つ。従って
+
+$$
+\boxed{\partial_E(y)=q^{-1}y^2d^{-2},
+\qquad \partial_E(z)\in(y)}.
+$$
+
+特に両側 ideal $(y)$ は $\partial_E$ と $\partial_K$ で安定である。
+
+## 2.3. $F$-方向の帰納法
+
+$d^2y=q^2yd^2$ である。まず
+
+$$
+\boxed{\partial_F(y^j)
+=q^{j-1}[j]_q\,y^{j-1}d^2}
+\tag{F.1}
+$$
+
+を $j$ について帰納法で示す。$j=1$ は上で示した。式が $j=m$ で成立すると、
+$\partial_{K^{-1}}(y)=y$ と twisted Leibniz 則により
+
+$$
+\begin{aligned}
+\partial_F(y^{m+1})
+&=\partial_F(y^m)y+y^m\partial_F(y)\\
+&=q^{m-1}[m]_q y^{m-1}d^2y+y^md^2\\
+&=\bigl(q^{m+1}[m]_q+1\bigr)y^md^2\\
+&=q^m[m+1]_q y^md^2.
+\end{aligned}
+$$
+
+ここで $q^m[m+1]_q=1+q^2+\cdots+q^{2m}$ を使った。よって (F.1) が
+全 $j$ で成立する。$\partial_F(d)=0$ なので反復すれば
+
+$$
+\boxed{\partial_F^j(y^j)
+=q^{\binom j2}[j]_q!\,d^{2j}}.
+\tag{F.2}
+$$
+
+$x$ と $p(z)$ は $\partial_F$ で消え、$\partial_{K^{-1}}(x)=x$ だから
 
 $$
 \partial_F^j\bigl(x^iy^jp(z)\bigr)
 =q^{\binom j2}[j]_q!\,x^id^{2j}p(z).
+\tag{F.3}
 $$
 
-$s<j$ なら $y^{j-s}$ が残り、$s>j$ なら 0 なので、counit へ寄与するのは
-$s=j$ の場合だけである。
+$s<j$ なら $y^{j-s}$ が残るため counit は 0、$s>j$ なら (F.2) の後に
+$\partial_F(d)=\partial_F(x)=\partial_F(z)=0$ なので 0 である。従って
+$F$-方向から $\delta_{js}$ と係数
+$q^{\binom j2}[j]_q!$ が得られる。
 
-次に両側 ideal $(y)$ による商を考える。商の中では
+## 2.4. $E$-方向の帰納法と Cartan shift
+
+両側 ideal $(y)$ による商で計算する。この商では
 
 $$
 \partial_E(d)=\partial_E(z)=0,
@@ -412,42 +477,109 @@ $$
 d^{-2}x=q^{-2}xd^{-2}.
 $$
 
-帰納法により
+まず
 
 $$
-\partial_E(x^m)
-\equiv q^{2-m}[m]_q x^{m-1}d^{-2}
-\pmod{(y)}.
+\boxed{\partial_E(x^m)
+\equiv q^{2-m}[m]_q x^{m-1}d^{-2}\pmod{(y)}}
+\tag{E.1}
 $$
 
-さらに任意の整数 $N$ と形式級数 $p(z)$ に対し
+を示す。$m=1$ は $\partial_E(x)=qd^{-2}$ である。$m$ で成立すると、
+$\partial_K(x)=x$ より
 
 $$
+\begin{aligned}
+\partial_E(x^{m+1})
+&=x^m\partial_E(x)+\partial_E(x^m)\partial_K(x)\\
+&\equiv qx^md^{-2}
++q^{2-m}[m]_q x^{m-1}d^{-2}x\\
+&=\bigl(q+q^{-m}[m]_q\bigr)x^md^{-2}\\
+&=q^{1-m}[m+1]_q x^md^{-2},
+\end{aligned}
+$$
+
+なので (E.1) が従う。
+
+次に任意の整数 $N$ と形式級数 $p(z)$ に対し、商では
+$\partial_E(d^Np(z))=0$ である一方、
+
+$$
+\partial_K(d^Np(z))=q^{-N}d^Np(z+\hbar).
+$$
+
+従って (E.1) と twisted Leibniz 則から
+
+$$
+\boxed{
 \partial_E\bigl(x^m d^N p(z)\bigr)
-\equiv
-q^{2-m-N}[m]_q x^{m-1}d^{N-2}p(z+\hbar)
-\pmod{(y)}.
+\equiv q^{2-m-N}[m]_q
+x^{m-1}d^{N-2}p(z+\hbar)
+\pmod{(y)}.}
+\tag{E.2}
 $$
 
-これを $m=i,i-1,\dots,1$ と反復すると
+これを $(m,N)=(i,2j),(i-1,2j-2),\ldots,(1,2j-2i+2)$ と反復する。
+$\ell$ 回作用した後の次の q-exponent は
 
 $$
+2-(i-\ell)-(2j-2\ell)=2-i-2j+3\ell.
+$$
+
+従って全 exponent の和は
+
+$$
+\sum_{\ell=0}^{i-1}(2-i-2j+3\ell)
+=\binom{i+1}{2}-2ij.
+$$
+
+よって
+
+$$
+\boxed{
 \partial_E^i\bigl(x^id^{2j}p(z)\bigr)
 \equiv
 q^{\binom{i+1}{2}-2ij}[i]_q!
- d^{2j-2i}p(z+i\hbar)
-\pmod{(y)}.
+d^{2j-2i}p(z+i\hbar)
+\pmod{(y)}.}
+\tag{E.3}
 $$
 
-したがって counit を取れば
+counit は $(y)$ を消し、$\varepsilon(d)=1$、$\varepsilon(z)=0$ なので
 
 $$
-\varepsilon\!\left(\partial_E^i(x^id^{2j}p(z))\right)
-=
-q^{\binom{i+1}{2}-2ij}[i]_q!\,p(i\hbar).
+\boxed{
+\varepsilon\!\left(
+\partial_E^i(x^id^{2j}p(z))
+\right)
+=q^{\binom{i+1}{2}-2ij}[i]_q!\,p(i\hbar).}
+\tag{E.4}
 $$
 
-$H$ は $z$ の通常微分として作用するため、以上を合成して
+$r<i$ なら $x^{i-r}$ が残って counit は 0 である。$r>i$ なら、$i$ 回作用後の
+$(y)$ を除く部分は $x$ を含まず、さらに $\partial_E$ を作用させた結果は
+$\partial_E$-安定 ideal $(y)$ に入るので counit は 0 である。従って
+$E$-方向から $\delta_{ir}$ が得られる。
+
+ここで $p(i\hbar)$ が現れる理由は normal ordering の飾りではない。
+$\partial_K(z)=z+\hbar$ により、各 $E$ が $x$ を一つ消すたびに $z$ が
+$\hbar$ だけ平行移動するためである。最小例は
+
+$$
+\langle xz,E\rangle
+=\varepsilon\bigl(x\partial_E(z)+\partial_E(x)\partial_K(z)\bigr)
+=q\hbar\ne0.
+$$
+
+従って $E^iH^k$ の dual の Cartan 因子には必ず
+$z-i\hbar$ が必要である。
+
+## 2.5. Master pairing formula
+
+$\partial_{E^rF^sH^t}=\partial_E^r\partial_F^s\partial_H^t$ なので、作用は
+右端から $H^t$、次に $F^s$、最後に $E^r$ の順に行う。2.2 の $H$-微分、
+2.3 の (F.3)、2.4 の (E.4) を合成すると、任意の
+$i,j,r,s,t\ge0$ と一変数形式級数 $p$ に対して
 
 $$
 \boxed{
@@ -457,34 +589,136 @@ $$
 \delta_{ir}\delta_{js}
 q^{\binom j2+\binom{i+1}{2}-2ij}
 [i]_q![j]_q!\,p^{(t)}(i\hbar).
-\end{aligned}
-}
+\end{aligned}}
+\tag{MP}
 $$
 
-を得る。
+これが master pairing formula である。特に $i=1,j=0,p(z)=z$ では
+$\langle xz,E\rangle=q\hbar$、$p(z)=z-\hbar$ では
+$\langle q^{-1}x(z-\hbar),E\rangle=0$ となり、旧式を直接排除する。
 
-## 2.5. Dual PBW basis
+## 2.6. Dual PBW basis
 
-$p(z)=(z-i\hbar)^k/k!$ と取れば
+固定した $i,j,k$ に対して
 
 $$
-p^{(t)}(i\hbar)=\delta_{kt}.
+p_{i,k}(z)=\frac{(z-i\hbar)^k}{k!}
 $$
 
-よって
+と置けば
+
+$$
+p_{i,k}^{(t)}(i\hbar)=\delta_{kt}.
+$$
+
+master formula (MP) の root scalar の逆数を掛けると
 
 $$
 \boxed{
-\bigl(E^iF^jH^k\bigr)_{q,R}^\vee
+\bigl(E^iF^jH^k\bigr)^\vee
 =
 \frac{q^{2ij-\binom{i+1}{2}-\binom j2}}
 {[i]_q!\,[j]_q!\,k!}
-(bd^{-1})^i(cd)^j(-\log d-i\hbar)^k.
-}
+(bd^{-1})^i(cd)^j(-\log d-i\hbar)^k.}
+\tag{DB}
 $$
 
-特に $E_{q,R}^\vee=q^{-1}bd^{-1}$、$F_{q,R}^\vee=cd$、
-$H_{q,R}^\vee=-\log d$ である。
+実際、(MP) へ代入して
+
+$$
+\left\langle
+\bigl(E^iF^jH^k\bigr)^\vee,
+E^rF^sH^t
+\right\rangle
+=\delta_{ir}\delta_{js}\delta_{kt}.
+$$
+
+特に
+
+$$
+\boxed{E^\vee=q^{-1}bd^{-1},\qquad
+F^\vee=cd,\qquad H^\vee=-\log d.}
+$$
+
+## 2.7. $-\log d$ の非可換 BCH 展開
+
+最後に、Cartan 座標を $(a,b,c)$ の ordered normal form で書く。単一の形式級数
+
+$$
+-\log d=\sum_{n\ge1}\frac{(1-d)^n}{n}
+$$
+
+は augmentation completion で定義される。問題は定義ではなく、非可換積を保った
+書き換えである。$\eta=bc$ と置くと量子行列式から
+
+$$
+d=a^{-1}(1+q^{-1}\eta),
+$$
+
+また FRT relations から
+
+$$
+a\eta=q^{-2}\eta a,
+\qquad
+[\log a,\eta^n]=-2n\hbar\eta^n.
+$$
+
+ここで
+
+$$
+A=-\log a,
+\qquad
+B=\log(1+e^{-\hbar}\eta)
+=\sum_{n\ge1}\frac{(-1)^{n+1}}{n}e^{-n\hbar}\eta^n
+$$
+
+と置けば $d=e^Ae^B$ である。$\eta^n$ の張る ideal は可換で、
+$\operatorname{ad}_A(\eta^n)=2n\hbar\eta^n$ だから、abelian-ideal BCH 公式
+
+$$
+\log(e^Ae^B)
+=A+\frac{\operatorname{ad}_A}{1-e^{-\operatorname{ad}_A}}B
+$$
+
+を各 $\eta^n$ に適用できる。$n$ 次係数は
+
+$$
+\frac{2n\hbar}{1-e^{-2n\hbar}}
+\frac{(-1)^{n+1}}{n}e^{-n\hbar}
+=(-1)^{n+1}\frac{\hbar}{\sinh(n\hbar)}.
+$$
+
+従って
+
+$$
+\log d=-\log a+
+\sum_{n\ge1}(-1)^{n+1}
+\frac{\hbar}{\sinh(n\hbar)}(bc)^n,
+$$
+
+すなわち
+
+$$
+\boxed{
+-\log d=\log a+
+\sum_{n\ge1}(-1)^n
+\frac{\hbar}{\sinh(n\hbar)}(bc)^n.}
+\tag{BCH}
+$$
+
+これは $a$ と $bc$ を可換とみなした
+$\log a-\log(1+bc)$ ではない。例えば
+
+$$
+-\log d
+=\log a+
+\left(-1+\frac{\hbar^2}{6}+O(\hbar^4)\right)bc
++\left(\frac12-\frac{\hbar^2}{3}+O(\hbar^4)\right)(bc)^2
++\cdots.
+$$
+
+以上で、Gauss 座標、coregular action、二つの帰納法、Cartan shift、master
+pairing、dual basis、および非可換 BCH 展開の全段階が示された。
 
 # 3. 計算設計とキャッシュ
 
@@ -1162,7 +1396,7 @@ ordered noncommutative algebra $O_q(SL_2)[d^{-1}]$, the quantum Gauss-coordinate
 argument proves
 
 $$
-\bigl(E^iF^jH^k\bigr)_{q,R}^\vee
+\bigl(E^iF^jH^k\bigr)_q^\vee
 =
 \frac{q^{2ij-\binom{i+1}{2}-\binom j2}}
 {[i]_q!\,[j]_q!\,k!}
@@ -1225,6 +1459,7 @@ render 出力にのみ使った。一時 probe で得た再利用可能な定義
 | independent check | 「指数2まで別の方法で検証」 | iterated coproductのmatrix coefficientで $i,j\le2$ を独立検証 |
 | external review | GPT Proより「$E^\vee$の$q^{-1}$、Cartan shift、K pairingが欠落」と指摘 | 旧一般式を撤回し coregular master formula から定理を再証明 |
 | presentation | 「数学→証明→program→発見過程」 | 本 notebook を現在の順序へ全面再編 |
+| proof omission | 「なんでQMDにGPT Proの証明を載せてない」 | 結論・略証だけの反映を撤回し、generator作用、twisted Leibniz則、二つの帰納法、Cartan shift、master formula、BCHの全段階を §2 に収載 |
 
 ## 6.3. 発見の主要段階
 
@@ -1252,6 +1487,9 @@ render 出力にのみ使った。一時 probe で得た再利用可能な定義
    これを検出し、coregular action を用いる master formula へ置換した。
 10. $K:z\mapsto z+\hbar$ により Cartan dual は $z^k$ ではなく
     $(z-i\hbar)^k$ であることを証明した。
+11. GPT Pro の完全証明を結論と短い要約へ圧縮してしまったため、§2を全面的に
+    書き直し、各generatorのcoregular action、$F$-帰納、$E$-帰納、root scalar、
+    Cartan shift、Kronecker pairing、abelian-ideal BCHを途中式込みで収載した。
 
 ## 6.4. 使用した計算方針
 
@@ -1271,7 +1509,7 @@ JULIA_PKGIMAGES=no quarto render notebooks/qsl2_dualbasis.qmd
 ```
 
 である。指数2の独立検証は SymPy の exact matrix coefficient calculationを
-使ったが、その数学的内容と結果表は本 notebook の §2.2 に収載した。
+使った。その数学的証明は §2、独立programと検証結果は §4.7 に収載した。
 
 ## 6.5. テスト設計の失敗と修正
 

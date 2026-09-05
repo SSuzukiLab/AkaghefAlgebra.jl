@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hmac
 import io
 import json
 import threading
@@ -83,6 +84,11 @@ class SageSessionHandler(BaseHTTPRequestHandler):
         host = self.headers.get("Host", "")
         if host and host not in allowed_hosts:
             self._send_json(403, {"ok": False, "error": "forbidden host"})
+            return True
+        expected = f"Bearer {self.server.auth_token}"
+        supplied = self.headers.get("Authorization", "")
+        if not hmac.compare_digest(supplied, expected):
+            self._send_json(401, {"ok": False, "error": "unauthorized"})
             return True
         if self.headers.get("Origin"):
             self._send_json(403, {"ok": False, "error": "cross-origin requests are forbidden"})
@@ -197,14 +203,18 @@ def main() -> None:
         "--host",
         default="127.0.0.1",
         choices=("127.0.0.1", "localhost"),
-        help="loopback only: this unauthenticated service executes Sage code",
+        help="loopback only: this token-authenticated service executes Sage code",
     )
     parser.add_argument("--port", default=8766, type=int)
+    parser.add_argument("--token", required=True, help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if len(args.token) != 64 or any(character not in "0123456789abcdef" for character in args.token):
+        parser.error("--token must be 64 lowercase hexadecimal characters")
 
     # Deliberately single-threaded: exec/eval share one namespace and redirect
     # process-global stdout/stderr, so concurrent handlers would race.
     server = HTTPServer((args.host, args.port), SageSessionHandler)
+    server.auth_token = args.token
     print(
         f"Sage session server listening on http://{args.host}:{args.port} "
         f"(sage {sage.version.version})",
