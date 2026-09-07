@@ -67,6 +67,19 @@ export qsl2_qnum, qsl2_qfactorial,
        qsl2_dual_pairing,
        qsl2_old_formula_leaks, qsl2_corrected_generator_pairings
 
+# Finite-group multiplicative cochains (exact by default)
+include("Cohomology/Cochains.jl")
+using .Cohomology: GroupCochain, Cochain1, Cochain2, Cochain3,
+                   cochain1, cochain2, cochain3,
+                   group_order, group_identity, group_table,
+                   coboundary, coboundary2, coboundary3,
+                   is_normalized, is_cocycle
+export GroupCochain, Cochain1, Cochain2, Cochain3,
+       cochain1, cochain2, cochain3,
+       group_order, group_identity, group_table,
+       coboundary, coboundary2, coboundary3,
+       is_normalized, is_cocycle
+
 # TODO: 以下は後続 Phase D wave で追加
 # include("Sparse/SparseEx.jl")
 # include("Vector/VectAlg.jl")
