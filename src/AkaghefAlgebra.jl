@@ -85,6 +85,18 @@ export GroupCochain, Cochain1, Cochain2, Cochain3,
        coboundary, coboundary2, coboundary3,
        is_normalized, is_cocycle
 
+# Finite-group representation and fusion-coordinate calculations.
+include("Fusion/FiniteGroupFusion.jl")
+using .FiniteGroupFusion: MatrixRepresentation, representation_dim,
+                          tensor_representation, intertwiner_basis,
+                          fusion_matrix, fusion_matrix_result,
+                          TraceDualBasis, trace_dual_basis,
+                          RawTetrahedron, raw_tetrahedron, contract_trace_dual
+export MatrixRepresentation, representation_dim, tensor_representation,
+       intertwiner_basis, fusion_matrix, fusion_matrix_result,
+       TraceDualBasis, trace_dual_basis,
+       RawTetrahedron, raw_tetrahedron, contract_trace_dual
+
 # Generic finite-presentation word-map certificates.  The package exports the
 # submodule only; its bounded producer/replay API stays namespaced.
 include("Groups/PresentationCertificates.jl")
