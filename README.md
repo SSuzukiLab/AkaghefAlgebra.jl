@@ -58,6 +58,19 @@ exact equality by default (`mode=:approx` enables tolerance-based checks), and
 coefficient type is generic over `Number`; `Rational` and
 `Complex{<:Rational}` therefore remain available for exact finite checks.
 
+## Finite-presentation word-map certificates
+
+`AkaghefAlgebra.Groups.PresentationCertificates` provides a small, exact
+certificate path for finite presentations.  `reduce_presentation` records only
+elementary Tietze eliminations whose selected relator contains one generator
+exactly once; `verify_certificate` replays every step and can bind it to the
+original caller presentation.  `compare_reductions` composes the resulting word
+maps when canonical finals agree, and has a bounded fallback for relator
+products of at most two signed cyclic conjugates.  The fallback exposes both
+directions in `comparison.witnesses` and is deliberately not a normal-closure
+search or a general CAS.  Failure is reported as unresolved; it is not a
+non-isomorphism proof.
+
 ## Docs
 
 See [`dev-docs/projects/AlgLibMove/`](../dev-docs/projects/AlgLibMove/).

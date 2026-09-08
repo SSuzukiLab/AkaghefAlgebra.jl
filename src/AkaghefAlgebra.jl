@@ -85,6 +85,12 @@ export GroupCochain, Cochain1, Cochain2, Cochain3,
        coboundary, coboundary2, coboundary3,
        is_normalized, is_cocycle
 
+# Generic finite-presentation word-map certificates.  The package exports the
+# submodule only; its bounded producer/replay API stays namespaced.
+include("Groups/PresentationCertificates.jl")
+using .Groups: PresentationCertificates
+export Groups
+
 # TODO: 以下は後続 Phase D wave で追加
 # include("Sparse/SparseEx.jl")
 # include("Vector/VectAlg.jl")

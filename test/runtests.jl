@@ -12,5 +12,6 @@ using AkaghefAlgebra
   include("Hopf/taft_exact_tests.jl")
   include("Hopf/symbolic_taft_tests.jl")
   include("Cohomology/cochain_tests.jl")
+  include("Groups/presentation_certificates_tests.jl")
   # include("parity/runtests_parity.jl")  # Phase D-5
 end
