@@ -1,0 +1,48 @@
+{
+  "date": "2026-09-08T10:00:29.0437287+09:00",
+  "status": "verified-computationally",
+  "runtime": "Julia 1.12.6",
+  "full_suite": {
+    "entrypoint": "test/runtests.jl",
+    "passed": 23331,
+    "total": 23331,
+    "elapsed": "3m08.0s",
+    "exit_code": 0
+  },
+  "example": {
+    "entrypoint": "examples/260908_symbolic_taft.jl",
+    "exit_code": 0,
+    "large_N": 1000003,
+    "specialized_values": [
+      1000003,
+      0
+    ],
+    "summands_visited": 0
+  },
+  "concrete_N": [
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "symbolic_coefficient_comparison_N": [
+    2,
+    3,
+    4
+  ],
+  "limitations": [
+    "Finite validation is not an all-N proof",
+    "General Gauss and q identities remain symbolic",
+    "No full MST or o-graph frontend"
+  ],
+  "source_sha256": {
+    "src/AkaghefAlgebra.jl": "5fc3c3a1a6ede077f45e20de67303e3d26f1be436ca86495c0bb30fda6b7a221",
+    "src/Hopf/TaftExact.jl": "6e0854c34332a37ca9195358c5a6b2da694d748b9964671dadaa5776ba02be2a",
+    "src/Hopf/SymbolicTaft.jl": "c226310ac1c56bdb976cc0ef427821499ae5e2710c447779a539f4b88b843b7d",
+    "test/runtests.jl": "7d420dbd8ae07155ac8c4ead26b9e154bfd0cece3158dc32188e3030932ce9f8",
+    "test/Hopf/taft_exact_tests.jl": "0dc7d023a19cc2a14e4cce4709a6eacecf6968a9c5653ce1138f7602b2b67fa0",
+    "test/Hopf/symbolic_taft_tests.jl": "e889d65dff4c42e88a5ef4cd61f5d92acf489406c268ce9961ea1f8d213f414f",
+    "examples/260908_symbolic_taft.jl": "a5fe9d9cb0ed383dabb3dacaefd2f8c3a0eb7e3a53c81c65bf81c229e312ce4e"
+  }
+}

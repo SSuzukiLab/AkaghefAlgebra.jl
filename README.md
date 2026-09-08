@@ -4,6 +4,29 @@ MATLAB `AkaghefAlgebra` の Julia 移植。AlgLibMove プロジェクトの成�
 
 Status: Phase C/D 進行中 (skeleton only)
 
+## Symbolic Taft calculus
+
+`SymbolicTaft` keeps N, bound indices, structure constants and finite sums
+symbolic. `TaftExact` supplies sparse right-coproduct Taft arithmetic over exact
+cyclotomic coefficients. These are available through the ordinary package import:
+
+```julia
+using AkaghefAlgebra.SymbolicTaft
+N, a = integer(:N), integer(:a)
+ctx = TaftContext(N)
+f = finite_sum(:s, 0, N-1) do s
+    phase(ctx, a*s)
+end
+result = normalize(f, ctx)  # N * moddelta(N, a), without enumerating s
+evaluate_exact(result.expression, ctx, Dict(:N=>6, :a=>0)) # 6
+```
+
+See [the specification](docs/260908_symbolic_taft_spec.md),
+[executable example](examples/260908_symbolic_taft.jl), and
+[validation scope](docs/260908_symbolic_taft_validation.md).
+The numerical `TaftAlg` retains its existing convention and dense-array API;
+the new modules explicitly use `KE=ζEK`, `Δ(E)=1⊗E+E⊗K`.
+
 ## Usage
 
 ```sh

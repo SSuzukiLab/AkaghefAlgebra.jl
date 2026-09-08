@@ -51,6 +51,11 @@ include("Hopf/TaftAlg.jl")
 using .TaftAlgMod: TaftAlg
 export TaftAlg
 
+# Exact sparse and lazy symbolic Taft calculus (right-coproduct convention).
+include("Hopf/TaftExact.jl")
+include("Hopf/SymbolicTaft.jl")
+export TaftExact, SymbolicTaft
+
 include("Hopf/HeisenbergDouble.jl")
 using .HeisenbergDoubleMod: HeisenbergDouble, hd_mul,
                             verify_HD_associativity, hd_pairing_nondeg, hd_unit_ok
