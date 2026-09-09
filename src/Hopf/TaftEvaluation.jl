@@ -7,12 +7,23 @@ factors before expensive coefficients.  It is intended for residual finite
 sums after symbolic reduction.
 """
 module TaftEvaluation
+using ..TaftNetworks: TaftExpression
 
 using ..SymbolicTaft
 using ..TaftExact
 using ..QSeries
 
 export FastProgram, compile_fast, evaluate_fast
+export evaluate_invariant
+
+"""Evaluate residual sums at fixed N, without applying any root parameter M."""
+function evaluate_invariant(x::TaftExpression,
+                            N::Integer;maxterms::Int=3_000_000)
+    value=evaluate_fast(x.expression,x.context,Dict(:N=>N);maxterms=maxterms)
+    convert(TaftExact.Cyclotomic{Int(N)},value)
+end
+evaluate_invariant(x::TaftExpression,N;kwargs...) =
+    throw(ArgumentError("final evaluation requires a concrete integer N"))
 
 abstract type FastNode end
 struct FConst <: FastNode; value::Any; end

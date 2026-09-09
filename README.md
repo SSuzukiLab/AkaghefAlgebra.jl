@@ -4,6 +4,8 @@ MATLAB `AkaghefAlgebra` の Julia 移植。AlgLibMove プロジェクトの成�
 
 Status: Phase C/D 進行中 (skeleton only)
 
+共通の責務・出力・等価性の契約は [インターフェース設計方針](docs/260909_interface_design.md) を参照。
+
 ## Symbolic Taft calculus
 
 `SymbolicTaft` keeps N, bound indices, structure constants and finite sums
@@ -26,6 +28,26 @@ See [the specification](docs/260908_symbolic_taft_spec.md),
 [validation scope](docs/260908_symbolic_taft_validation.md).
 The numerical `TaftAlg` retains its existing convention and dense-array API;
 the new modules explicitly use `KE=ζEK`, `Δ(E)=1⊗E+E⊗K`.
+
+Public rooted values retain the chosen primitive root while storing canonical
+ζ_N coefficients:
+
+```julia
+using AkaghefAlgebra
+base = TaftExact.zeta(9)^(-64) # internal Cyclotomic{9}
+z = normalize_root(base, RootSpec(9,2)) # public Cyclotomic{9,2}
+coefficients(z) # [0, -1, 0, 0, -1, 0], rational coefficients
+@assert normalize_root(z, RootSpec(9,11)) === z
+```
+
+`canonical_value(z)` copies the internal value, `specified_root(z)` returns
+ζ_N^M, and `ComplexF64(z)` approximates the stored canonical value. `==` and
+`isequal` compare rooted values across M for the same N; hashes agree.
+Cross-domain comparisons to scalars/internal values use mathematical `==`,
+while `isequal` remains restricted to the public rooted domain. Arithmetic
+requires matching N and M; `with_root(z, RootSpec(N,M))` explicitly changes
+metadata while preserving the value. Changing the Galois conjugate instead
+requires `normalize_root(base, new_spec)` on the unfinalized base value.
 
 ## Usage
 

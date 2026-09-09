@@ -57,6 +57,14 @@ include("QSeries.jl")
 include("Hopf/SymbolicTaft.jl")
 include("Hopf/TaftNetworks.jl")
 include("Hopf/TaftEvaluation.jl")
+include("CyclotomicValues.jl")
+PolAlgs.coefficients(x::CyclotomicValues.Cyclotomic) = CyclotomicValues.coefficients(x)
+using .CyclotomicValues: Cyclotomic, RootSpec, normalize_root, root_spec,
+                        specified_root, canonical_value, with_root
+using .TaftNetworks: TaftExpression, simplify_invariant
+using .TaftEvaluation: evaluate_invariant
+export Cyclotomic, RootSpec, normalize_root, root_spec, specified_root,
+       canonical_value, with_root, TaftExpression, simplify_invariant, evaluate_invariant
 export TaftExact, SymbolicTaft, QSeries, TaftNetworks, TaftEvaluation
 
 include("Hopf/HeisenbergDouble.jl")

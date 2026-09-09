@@ -4,6 +4,35 @@ import ..SymbolicTaft as ST
 import ..TaftExact as TE
 const T=ST.Term
 export network, reduce_network, reduce_with_qrules, close_sums, galois
+export TaftExpression, simplify_invariant
+
+"""M-independent Taft expression with explicit residual sum indices."""
+struct TaftExpression
+    expression::T
+    body::T
+    remaining::Vector{T}
+    context::ST.TaftContext
+    trace::Vector{Any}
+    seconds::Float64
+    ports::Vector{Vector{Int}}
+    weights::Vector{Int}
+end
+
+function TaftExpression(body,vars,ctx;trace=Any[],seconds=0.0,ports=Vector{Int}[],weights=Int[])
+    TaftExpression(close_sums(body,vars,ctx),body,copy(vars),ctx,copy(trace),Float64(seconds),
+                   [Int.(p) for p in ports],Int.(weights))
+end
+
+"""Value-preserving reduction; :qa, :network and :none differ only in reduction work."""
+function simplify_invariant(x::TaftExpression;strategy=:qa)
+    strategy==:auto && (strategy=:qa)
+    strategy in (:qa,:network,:none) || throw(ArgumentError("Taft strategy must be :qa, :network or :none"))
+    run=@timed strategy==:none ? (x.body,copy(x.remaining),Any[]) :
+        reduce_with_qrules(x.body,x.remaining,x.context;baseline=strategy==:network)
+    body,vars,trace=run.value
+    TaftExpression(body,vars,x.context;trace=vcat(x.trace,trace),seconds=run.time,
+                   ports=x.ports,weights=x.weights)
+end
 
 function network(ports, signs, weights)
     n=length(ports)

@@ -14,6 +14,7 @@ using AkaghefAlgebra
   include("Hopf/symbolic_taft_tests.jl")
   include("Hopf/symbolic_taft_qrules_tests.jl")
   include("Hopf/taft_evaluation_tests.jl")
+  include("CyclotomicValues/rooted_tests.jl")
   include("Cohomology/cochain_tests.jl")
   include("Fusion/finite_group_fusion_tests.jl")
   include("Groups/presentation_certificates_tests.jl")
