@@ -5,10 +5,12 @@ primitive N-th root of unity; specialization checks these assumptions.
 """
 module SymbolicTaft
 
-using ..TaftExact: zeta, qbinomial, qfactorial
+using ..TaftExact: Cyclotomic, zeta, qbinomial, qfactorial
+using ..QSeries: QQq, qgenerator, specialize_q
 export Term, integer, TaftContext, phase, eqdelta, moddelta, inrange,
-       qchoose, qfact, finite_sum, substitute, freevars, normalize,
-       Normalization, evaluate_exact, structure, lower, nodecount
+       qchoose, qchoose_inv, qfact, qproduct, finite_sum, substitute,
+       freevars, normalize, qrewrite, simplify_q, zero_status, Normalization,
+       evaluate_exact, structure, lower, nodecount
 
 struct Term
     op::Symbol
@@ -17,9 +19,44 @@ end
 term(x::Term) = x
 term(x::Integer) = Term(:num, (BigInt(x)//BigInt(1),))
 term(x::Rational) = Term(:num, (BigInt(numerator(x))//BigInt(denominator(x)),))
+term(x::Cyclotomic) = Term(:coeff, (x,))
+function term(x::QQq)
+    parent(x) === parent(qgenerator()) ||
+        throw(ArgumentError("coefficient must belong to the canonical Q(q) parent"))
+    Term(:coeff, (x,))
+end
 integer(name::Symbol) = Term(:var, (name,))
 isnum(x::Term) = x.op == :num
 isnum(x::Term, n) = isnum(x) && x.args[1] == n
+iscoeff(x::Term) = x.op == :coeff
+
+_coeff_parent(a::Cyclotomic) = typeof(a)
+_coeff_parent(a::QQq) = parent(a)
+_same_coeff_parent(a,b) = a isa Cyclotomic && b isa Cyclotomic ? typeof(a) === typeof(b) :
+    a isa QQq && b isa QQq && parent(a) === parent(b)
+function _check_coeff_parent(a,b)
+    _same_coeff_parent(a,b) ||
+        throw(ArgumentError("coefficient terms must belong to the same parent"))
+    a
+end
+_coeff_zero(a) = iszero(a)
+_coeff_mul(a,b) = _check_coeff_parent(a,b) * b
+_coeff_add(a,b) = _check_coeff_parent(a,b) + b
+_scalar_mul(a::Rational,b) = a*b
+_scalar_mul(a,b::Rational) = b*a
+_scalar_mul(a::Rational,b::Rational) = a*b
+_scalar_mul(a,b) = _coeff_mul(a,b)
+_scalar_add(a::Rational,b::Rational) = a+b
+function _scalar_add(a,b)
+    if a isa Rational && b isa Union{Cyclotomic,QQq}
+        return b + a
+    elseif b isa Rational && a isa Union{Cyclotomic,QQq}
+        return a + b
+    end
+    _coeff_add(a,b)
+end
+_scalar_term(a::Rational) = term(a)
+_scalar_term(a) = term(a)
 
 # Alpha-equivalence is structural equality, including nested shadowing.
 function key(x::Term, scope=Symbol[])
@@ -34,7 +71,10 @@ function key(x::Term, scope=Symbol[])
     x.op in (:add,:mul) && sort!(ks)
     return string(x.op) * "(" * join(ks, ",") * ")"
 end
-argkey(a,scope) = a isa Term ? key(a,scope) : a isa Tuple ? "["*join((argkey(t,scope) for t in a),",")*"]" : repr(a)
+argkey(a,scope) = a isa Term ? key(a,scope) :
+    a isa Tuple ? "["*join((argkey(t,scope) for t in a),",")*"]" :
+    a isa Cyclotomic ? "cyclotomic:"*string(typeof(a))*":"*repr(a) :
+    a isa QQq ? "qqq:"*string(objectid(parent(a)))*":"*repr(a) : repr(a)
 maparg(f,a) = a isa Term ? f(a) : a isa Tuple ? Tuple(maparg(f,t) for t in a) : a
 Base.:(==)(x::Term,y::Term) = key(x) == key(y)
 Base.isequal(x::Term,y::Term) = x == y
@@ -42,12 +82,86 @@ Base.hash(x::Term,h::UInt) = hash(key(x),h)
 Base.iszero(x::Term) = isnum(x,0)
 Base.isone(x::Term) = isnum(x,1)
 
+"""Classify whether a symbolic term is known to be zero or nonzero.
+
+The result is one of `:zero`, `:nonzero`, or `:unknown`.  Unknown is kept
+distinct from nonzero so a formal inverse is never introduced on an
+unjustified denominator.
+"""
+function zero_status(x::Term)
+    x.op == :num && return iszero(x.args[1]) ? :zero : :nonzero
+    x.op == :coeff && return iszero(x.args[1]) ? :zero : :nonzero
+    x.op in (:phase, :sign) && return :nonzero
+    x.op in (:eq, :moddelta, :range) && return :unknown
+    if x.op == :mul
+        sts = [zero_status(t) for t in x.args]
+        any(==(:zero), sts) && return :zero
+        all(==(:nonzero), sts) && return :nonzero
+        return :unknown
+    elseif x.op == :add
+        # `addition` has already collected exact rational coefficients; a
+        # remaining sum can only be classified when it collapsed to a leaf.
+        return :unknown
+    elseif x.op == :pow
+        base, exponent = x.args
+        e = exponent isa Integer ? exponent : (isnum(exponent) ? exponent.args[1] : nothing)
+        e === nothing && return :unknown
+        e isa Rational && denominator(e) != 1 && return :unknown
+        e = e isa Rational ? numerator(e) : e
+        e == 0 && return :nonzero
+        return zero_status(base)
+    elseif x.op in (:qchoose, :qchoose_inv)
+        _, n, k = x.args
+        if isnum(n) && isnum(k) && denominator(n.args[1]) == 1 && denominator(k.args[1]) == 1
+            nn, kk = numerator(n.args[1]), numerator(k.args[1])
+            nn < 0 && return :unknown
+            (kk < 0 || kk > nn) && return :zero
+            (kk == 0 || kk == nn) && return :nonzero
+        end
+        return :unknown
+    elseif x.op == :qfact
+        N, r = x.args
+        if isnum(N) && isnum(r) && denominator(N.args[1]) == 1 && denominator(r.args[1]) == 1
+            nn, rr = numerator(N.args[1]), numerator(r.args[1])
+            rr < 0 && return :unknown
+            rr <= 1 && return :nonzero
+            rr >= nn && return :zero
+        end
+        return :unknown
+    elseif x.op == :qproduct
+        N, a, n = x.args
+        if isnum(N) && isnum(a) && isnum(n) &&
+                denominator(N.args[1]) == 1 && denominator(a.args[1]) == 1 &&
+                denominator(n.args[1]) == 1
+            nn, aa, ll = numerator(N.args[1]), numerator(a.args[1]), numerator(n.args[1])
+            ll < 0 && return :unknown
+            ll == 0 && return :nonzero
+            any(mod(aa+j,nn) == 0 for j in BigInt(0):ll-1) && return :zero
+            return :nonzero
+        end
+        return :unknown
+    end
+    :unknown
+end
+
 function product(xs)
-    flat = Term[]; c = BigInt(1)//BigInt(1)
+    flat = Term[]; c = BigInt(1)//BigInt(1); coeff = nothing
     for x in xs
         for t in (x.op == :mul ? x.args : (x,))
-            if isnum(t); c *= t.args[1]; else; push!(flat,t); end
+            if isnum(t)
+                c *= t.args[1]
+            elseif iscoeff(t)
+                coeff = coeff === nothing ? t.args[1] : _coeff_mul(coeff,t.args[1])
+            else
+                push!(flat,t)
+            end
         end
+    end
+    if coeff !== nothing
+        coeff = _scalar_mul(coeff,c)
+        _coeff_zero(coeff) && return term(0)
+        pushfirst!(flat,term(coeff))
+        c = BigInt(1)//BigInt(1)
     end
     iszero(c) && return term(0)
     # Indicator factors are idempotent, other factors are not.
@@ -64,15 +178,23 @@ function product(xs)
     isempty(out) ? term(1) : length(out)==1 ? out[1] : Term(:mul,Tuple(out))
 end
 function addition(xs)
-    cs = Dict{Term,Rational{BigInt}}()
+    cs = Dict{Term,Any}()
     for x in xs
         for t in (x.op == :add ? x.args : (x,))
-            c,b = isnum(t) ? (t.args[1],term(1)) :
-                t.op == :mul && isnum(t.args[1]) ? (t.args[1].args[1],product(t.args[2:end])) : (BigInt(1)//BigInt(1),t)
-            cs[b] = get(cs,b,BigInt(0)//BigInt(1)) + c
+            c,b = if isnum(t)
+                (t.args[1],term(1))
+            elseif iscoeff(t)
+                (t.args[1],term(1))
+            elseif t.op == :mul && any(u -> isnum(u) || iscoeff(u), t.args)
+                j = findfirst(u -> isnum(u) || iscoeff(u), t.args)
+                (t.args[j].args[1],product((u for (k,u) in enumerate(t.args) if k != j)))
+            else
+                (BigInt(1)//BigInt(1),t)
+            end
+            cs[b] = haskey(cs,b) ? _scalar_add(cs[b],c) : c
         end
     end
-    out = [product((term(c),b)) for (b,c) in cs if c != 0]
+    out = [product((_scalar_term(c),b)) for (b,c) in cs if !_coeff_zero(c)]
     sort!(out;by=key)
     isempty(out) ? term(0) : length(out)==1 ? out[1] : Term(:add,Tuple(out))
 end
@@ -87,10 +209,23 @@ end
 function Base.:^(x::Term,n::Integer)
     n == 0 && return term(1)
     n == 1 && return x
+    iscoeff(x) && return term(x.args[1]^n)
+    if n < 0
+        status = zero_status(x)
+        status == :zero && throw(DivideError())
+        status == :unknown &&
+            throw(ArgumentError("cannot invert an unknown symbolic scalar"))
+    end
     isnum(x) && return term(x.args[1]^n)
     Term(:pow,(x,BigInt(n)))
 end
-Base.:/(x::Term,y::Term) = x * (y^(-1))
+function Base.:/(x::Term,y::Term)
+    status = zero_status(y)
+    status == :zero && throw(DivideError())
+    status == :unknown &&
+        throw(ArgumentError("cannot divide by an unknown symbolic scalar"))
+    x * (y^(-1))
+end
 Base.inv(x::Term) = Base.:^(x,-1)
 Base.:/(x::Term,y::Union{Integer,Rational}) = x/term(y)
 Base.:/(x::Union{Integer,Rational},y::Term) = term(x)/y
@@ -109,7 +244,10 @@ eqdelta(a,b=0) = Term(:eq,(term(a),term(b)))
 moddelta(c::TaftContext,a) = Term(:moddelta,(c.N,term(a)))
 inrange(a,lo,hi) = Term(:range,(term(a),term(lo),term(hi)))
 qchoose(c::TaftContext,n,k) = Term(:qchoose,(c.N,term(n),term(k)))
+qchoose_inv(c::TaftContext,n,k) = Term(:qchoose_inv,(c.N,term(n),term(k)))
 qfact(c::TaftContext,n) = Term(:qfact,(c.N,term(n)))
+"""Finite product from QA3: `∏_{j=0}^{n-1}(1-q^(a+j))`."""
+qproduct(c::TaftContext,a,n) = Term(:qproduct,(c.N,term(a),term(n)))
 
 """Create a fresh bound integer index. Bounds are inclusive; empty sums are zero."""
 function finite_sum(f::Function,name::Symbol,lo,hi)
@@ -148,7 +286,14 @@ end
 function rebuild(op,args)
     op == :add && return addition(args)
     op == :mul && return product(args)
-    op == :pow && return args[1]^args[2]
+    if op == :pow
+        # Internal lowering may carry a formal inverse whose denominator is
+        # not yet classifiable.  Public `^(-1)` still rejects that case.
+        if args[2] isa Integer && args[2] < 0 && zero_status(args[1]) == :unknown
+            return Term(:pow,args)
+        end
+        return args[1]^args[2]
+    end
     Term(op,args)
 end
 argcount(a) = a isa Term ? nodecount(a) : a isa Tuple ? sum(argcount,a;init=0) : 0
@@ -205,7 +350,9 @@ function lower(x::Term)
         return gate*eqdelta(r,0)*eqdelta(s,0)
     elseif kind == :dual_basis
         (r,s),(l,t)=ps
-        return gate*eqdelta(t,r)*phase(c,-s*l)/(N*qfact(c,r))
+        # Keep the coefficient inverse lazy: the denominator contains the
+        # symbolic N and q-factorial, so it cannot be proved nonzero here.
+        return gate*eqdelta(t,r)*phase(c,-s*l)*Term(:pow,(N*qfact(c,r),BigInt(-1)))
     else
         (l,t),(r,s)=ps
         return gate*eqdelta(t,r)*qfact(c,r)*phase(c,l*s)
@@ -382,6 +529,9 @@ function normalize(x::Term; maxpasses::Int=64,maxnodes::Int=100000,context::Unio
 end
 normalize(x::Term,c::TaftContext;kwargs...) = normalize(x;context=c,kwargs...)
 
+# Lightweight root-of-unity q-binomial rewrites (QA1--QA7, QA11).
+include("QRules.jl")
+const _COEFFICIENT_ORDER = gensym(:coefficient_order)
 """Specialize and evaluate with exact cyclotomic coefficients.
 
 Each visited summand consumes `maxterms`; exhausted budgets throw rather than
@@ -391,12 +541,17 @@ function evaluate_exact(x::Term,env::AbstractDict=Dict{Symbol,Int}();maxterms::I
     maxterms>=0 || throw(ArgumentError("maxterms must be nonnegative"))
     all(v isa Integer for v in values(env)) || throw(ArgumentError("free variables must specialize to integers"))
     budget=Ref(maxterms)
-    exacteval(x,Dict{Symbol,Any}(k=>BigInt(v) for (k,v) in env),budget)
+    fixed=Dict{Symbol,Any}(k=>BigInt(v) for (k,v) in env)
+    haskey(env,:N) && (fixed[_COEFFICIENT_ORDER]=BigInt(env[:N]))
+    exacteval(x,fixed,budget)
 end
 function evaluate_exact(x::Term,c::TaftContext,env::AbstractDict=Dict{Symbol,Int}();maxterms::Int=1000000)
     n=evaluate_exact(c.N,env;maxterms=0)
     asint(n)>=2 || throw(DomainError(n,"N must be ≥ 2"))
-    evaluate_exact(x,env;maxterms=maxterms)
+    haskey(env,:N) && env[:N]!=asint(n) &&
+        throw(ArgumentError("environment N does not match context N"))
+    fixed=Dict{Symbol,Any}(env); fixed[:N]=asint(n)
+    evaluate_exact(x,fixed;maxterms=maxterms)
 end
 function asint(x)
     x isa Integer && return x
@@ -406,6 +561,12 @@ end
 function exacteval(x,env,budget)
     op,a=x.op,x.args
     op==:num && return a[1]
+    if op == :coeff
+        coeff = a[1]
+        N = haskey(env,_COEFFICIENT_ORDER) ? asint(env[_COEFFICIENT_ORDER]) : nothing
+        N === nothing && return coeff
+        return specialize_q(coeff,N)
+    end
     op==:var && return env[a[1]]
     op==:structure && return exacteval(lower(x),env,budget)
     if op==:sum
@@ -432,15 +593,16 @@ function exacteval(x,env,budget)
     op==:add && return sum(v)
     if op==:pow
         base=v[1]
-        base isa Integer && v[2]<0 && (base=BigInt(base)//BigInt(1))
-        return base^v[2]
+        exponent = v[2] isa Rational && denominator(v[2]) == 1 ? numerator(v[2]) : v[2]
+        base isa Integer && exponent<0 && (base=BigInt(base)//BigInt(1))
+        return base^exponent
     end
     op==:eq && return BigInt(v[1]==v[2])//BigInt(1)
     op==:range && return BigInt(v[2]<=v[1]<=v[3])//BigInt(1)
     op==:mod && return mod(asint(v[1]),asint(v[2]))
     op==:tri && return div(asint(v[1])*(asint(v[1])-1),2)
     op==:sign && return (-BigInt(1))^asint(v[1])
-    if op in (:phase,:moddelta,:qchoose,:qfact)
+    if op in (:phase,:moddelta,:qchoose,:qchoose_inv,:qfact,:qproduct)
         N=Int(asint(v[1])); N>=2 || throw(DomainError(N,"N must be ≥ 2"))
         op==:phase && return zeta(N)^asint(v[2])
         op==:moddelta && return BigInt(mod(asint(v[2]),N)==0)//BigInt(1)
@@ -449,7 +611,19 @@ function exacteval(x,env,budget)
             nn>=0 || throw(DomainError(nn,"q-binomial upper index must be nonnegative"))
             return kk<0 || kk>nn ? BigInt(0)//BigInt(1) : qbinomial(N,nn,kk)
         end
+        if op==:qchoose_inv
+            nn,kk=Int(asint(v[2])),Int(asint(v[3]))
+            nn>=0 || throw(DomainError(nn,"q-binomial upper index must be nonnegative"))
+            return kk<0 || kk>nn ? BigInt(0)//BigInt(1) :
+                zeta(N)^(-kk*(nn-kk))*qbinomial(N,nn,kk)
+        end
         op==:qfact && return qfactorial(N,Int(asint(v[2])))
+        if op==:qproduct
+            aa,nn=asint(v[2]),asint(v[3])
+            nn>=0 || throw(DomainError(nn,"q-product length must be nonnegative"))
+            z=zeta(N)
+            return prod((1-z^(aa+j) for j in 0:nn-1);init=one(z))
+        end
     end
     error("unsupported expression: $op")
 end
@@ -458,6 +632,7 @@ function Base.show(io::IO,x::Term)
     op,a=x.op,x.args
     if op==:num; print(io,denominator(a[1])==1 ? string(numerator(a[1])) : string(a[1]))
     elseif op==:var; print(io,a[1])
+    elseif op==:coeff; print(io,a[1])
     elseif op in (:add,:mul); print(io,"("); join(io,a,op==:add ? " + " : " * "); print(io,")")
     elseif op==:sum; print(io,"Sum[",a[1],"=",a[2],":",a[3],"](",a[4],")")
     elseif op==:pow; print(io,"(",a[1],")^",a[2])

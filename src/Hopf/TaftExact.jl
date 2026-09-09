@@ -128,6 +128,14 @@ Base.promote_rule(::Type{S}, ::Type{Cyclotomic{N}}) where {N,S<:Integer} = Cyclo
 Base.promote_rule(::Type{Rational{S}}, ::Type{Cyclotomic{N}}) where {N,S<:Integer} = Cyclotomic{N}
 coefficients(x::Cyclotomic) = copy(x.coeffs)
 
+"""Numerical embedding at the canonical root exp(2πi/N), for display/comparison only."""
+Base.ComplexF64(x::Cyclotomic{N}) where {N} =
+    sum(ComplexF64(a)*cis(2pi*(j-1)/N) for (j,a) in enumerate(x.coeffs))
+Base.isapprox(x::Cyclotomic,y::Union{Integer,Rational,AbstractFloat,Complex};kwargs...) =
+    isapprox(ComplexF64(x),ComplexF64(y);kwargs...)
+Base.isapprox(x::Union{Integer,Rational,AbstractFloat,Complex},y::Cyclotomic;kwargs...) =
+    isapprox(ComplexF64(x),ComplexF64(y);kwargs...)
+
 function Base.show(io::IO, x::Cyclotomic{N}) where {N}
     c = x.coeffs; terms = String[]
     for (i,a) in enumerate(c)
@@ -219,30 +227,11 @@ function zeta(N::Integer)
     Cyclotomic{Int(N)}([0, 1])
 end
 
-function qbinomial(N::Integer, n::Integer, k::Integer)
-    n >= 0 && 0 <= k <= n || throw(ArgumentError("require 0 ≤ k ≤ n"))
-    q = zeta(N)
-    row = [zero(q) for _ in 0:n]; row[1] = one(q)
-    for m in 1:n
-        nxt = [zero(q) for _ in 0:m]
-        for j in 0:m
-            j <= m-1 && (nxt[j+1] += q^j * row[j+1])
-            j >= 1 && (nxt[j+1] += row[j])
-        end
-        row = nxt
-    end
-    row[k+1]
-end
-
-function qfactorial(N::Integer, r::Integer)
-    r >= 0 || throw(ArgumentError("r must be nonnegative"))
-    q = zeta(N); out = one(q)
-    for m in 1:r
-        out *= sum((q^j for j in 0:m-1); init=zero(q))
-    end
-    out
-end
-
+# Compatibility entry points: coefficient arithmetic belongs to QSeries.
+# Resolve the sibling at call time because QSeries imports the field type above.
+_qseries() = getfield(parentmodule(@__MODULE__), :QSeries)
+qbinomial(N::Integer,n::Integer,k::Integer) = _qseries().qbinomial(zeta(N),n,k)
+qfactorial(N::Integer,r::Integer) = _qseries().qfactorial(zeta(N),r)
 # ---------------------------------------------------------------------------
 # Sparse Taft elements and tensors
 # ---------------------------------------------------------------------------

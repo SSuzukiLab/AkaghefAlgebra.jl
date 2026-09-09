@@ -53,8 +53,11 @@ export TaftAlg
 
 # Exact sparse and lazy symbolic Taft calculus (right-coproduct convention).
 include("Hopf/TaftExact.jl")
+include("QSeries.jl")
 include("Hopf/SymbolicTaft.jl")
-export TaftExact, SymbolicTaft
+include("Hopf/TaftNetworks.jl")
+include("Hopf/TaftEvaluation.jl")
+export TaftExact, SymbolicTaft, QSeries, TaftNetworks, TaftEvaluation
 
 include("Hopf/HeisenbergDouble.jl")
 using .HeisenbergDoubleMod: HeisenbergDouble, hd_mul,

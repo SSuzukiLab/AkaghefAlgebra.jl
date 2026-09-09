@@ -22,7 +22,8 @@ _qb(N,n,k) = k < 0 || k > n ? zero(TE.zeta(N)) : TE.qbinomial(N,n,k)
     @test TE.zeta(2) == -1
     @test TE.zeta(1) == 1
     @test_throws ArgumentError TE.zeta(0)
-    @test_throws ArgumentError TE.qbinomial(3, 2, 3)
+    @test TE.qbinomial(3, 2, 3)==0
+    @test_throws ArgumentError TE.qbinomial(3, -1, 0)
     @test_throws ArgumentError TE.TaftElement(3, Dict((0,0)=>1.0))
     @test_throws ArgumentError TE.TaftElement(3, Dict((0,0)=>TE.zeta(4)))
 end
