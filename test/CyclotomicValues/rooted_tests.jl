@@ -47,5 +47,13 @@ import AkaghefAlgebra.CyclotomicValues as CV
     @test q^(-64) == (q^(-32))^2
     @test (v1^-2) * (v1^2) == 1
     @test ComplexF64(v2) ≈ ComplexF64(CV.canonical_value(v2))
+    @test v2 ≈ ComplexF64(v2)
+    @test ComplexF64(v2) ≈ v2
+    @test CV.Cyclotomic(CV.RootSpec(2, 1), -1) ≈ -1
+    @test -1 ≈ CV.Cyclotomic(CV.RootSpec(2, 1), -1)
+    @test CV.Cyclotomic(r1, 1//2) ≈ 0.5
+    @test CV.Cyclotomic(r1, 0) ≈ 0 atol=1e-12
+    @test !(v1 ≈ 0)
+    @test !(v2 ≈ ComplexF64(v1))
     @test !occursin("ζ^7", sprint(show, v2))
 end

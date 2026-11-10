@@ -87,6 +87,12 @@ function Base.show(io::IO, x::Cyclotomic{N,M}) where {N,M}
 end
 
 Base.ComplexF64(x::Cyclotomic) = ComplexF64(x.canonical)
+# As for `TE.Cyclotomic`. Without these, `isapprox` falls back to the generic
+# `Number` method, which needs `real`; that is undefined on a cyclotomic field.
+Base.isapprox(x::Cyclotomic, y::Union{Integer,Rational,AbstractFloat,Complex}; kwargs...) =
+    isapprox(ComplexF64(x), ComplexF64(y); kwargs...)
+Base.isapprox(x::Union{Integer,Rational,AbstractFloat,Complex}, y::Cyclotomic; kwargs...) =
+    isapprox(ComplexF64(x), ComplexF64(y); kwargs...)
 Base.iszero(x::Cyclotomic) = iszero(x.canonical)
 Base.zero(::Type{Cyclotomic{N,M}}) where {N,M} =
     Cyclotomic{N,M}(TE.Cyclotomic{N}(0))
